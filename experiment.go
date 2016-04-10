@@ -6,8 +6,6 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 type (
@@ -208,6 +206,6 @@ func (e *Experiment) makeObservation(b *behaviour, obs *experimentObservation) O
 	e.observations[b.name] = obs
 	e.Unlock()
 
-	obs.value, obs.err = b.fnc(context.Background())
+	obs.value, obs.err = b.fnc(e.opts.ctx)
 	return obs
 }

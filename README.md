@@ -143,3 +143,9 @@ func shouldRunExperiment(user User) bool {
 ```
 
 In this case, if the user is not confirmed yet, we will not run the experiment.
+
+### Context
+
+When using a context for your request, you might have information that you need
+within your test. Using the `Context()` option, you can now set a context that
+will be used to pass along to your test functions.

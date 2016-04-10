@@ -1,5 +1,7 @@
 package experiment
 
+import "golang.org/x/net/context"
+
 type (
 	options struct {
 		name       string
@@ -7,6 +9,7 @@ type (
 		testMode   bool
 		percentage float64
 		comparison ComparisonMethod
+		ctx        context.Context
 	}
 
 	ComparisonMethod func(Observation, Observation) bool
@@ -17,6 +20,7 @@ func newOptions(ops ...Option) options {
 	opts := options{
 		enabled:    true,
 		percentage: 10,
+		ctx:        context.Background(),
 	}
 
 	for _, o := range ops {
@@ -71,5 +75,13 @@ func Compare(m ComparisonMethod) Option {
 func TestMode() Option {
 	return func(opts *options) {
 		opts.testMode = true
+	}
+}
+
+// Context is an option that allows you to add a context to the experiment. This
+// will be used as a base for injecting the context into your test methods.
+func Context(ctx context.Context) Option {
+	return func(opts *options) {
+		opts.ctx = ctx
 	}
 }

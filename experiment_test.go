@@ -99,6 +99,24 @@ func TestExperiment_Run_WithTestPanic(t *testing.T) {
 	assert.NotNil(t, panicObs.Panic)
 }
 
+func TestExperiment_Run_WithContext(t *testing.T) {
+	val := "my-context-test"
+	ctx := context.WithValue(context.Background(), "ctx-test", val)
+
+	exp := New("context-test", Context(ctx))
+	exp.Control(dummyContextTestFunc)
+	exp.Test("context-test", dummyTestFunc)
+
+	obs, err := exp.Run()
+
+	assert.Nil(t, err)
+	assert.Equal(t, obs.Value().(string), val)
+}
+
+func dummyContextTestFunc(ctx context.Context) (interface{}, error) {
+	return ctx.Value("ctx-test"), nil
+}
+
 func dummyTestFunc(ctx context.Context) (interface{}, error) {
 	return "test", nil
 }

@@ -3,6 +3,8 @@ package experiment
 import (
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,6 +16,7 @@ func TestDefaultOptions(t *testing.T) {
 	assert.True(t, defaults.enabled, "Default enabler")
 	assert.False(t, defaults.testMode, "Default testMode")
 	assert.Nil(t, defaults.comparison, "Default comparison method")
+	assert.NotNil(t, defaults.ctx, "Default context")
 }
 
 func TestOptions_Name(t *testing.T) {
@@ -42,4 +45,13 @@ func TestOptions_Compare(t *testing.T) {
 	}
 	ops := newOptions(Compare(cmp))
 	assert.NotNil(t, ops.comparison, "Overwriting comparison method")
+}
+
+func TestOptions_Context(t *testing.T) {
+	val := "foo"
+	ctx := context.WithValue(context.Background(), "test-ctx", val)
+
+	ops := newOptions(Context(ctx))
+	ctxVal := ops.ctx.Value("test-ctx")
+	assert.Equal(t, val, ctxVal)
 }
