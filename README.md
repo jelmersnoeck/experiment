@@ -20,19 +20,25 @@ func main() {
         return
     }
 
-	exp.Control(func() interface{} {
-		return "my-text"
+	exp.Control(func(ctx context.Context) (interface{}, error) {
+		return "my-text", nil
 	})
-	exp.Test(func() interface{} {
+	exp.Test("buffer", func(ctx context.Context) (interface{}, error) {
 		buf := bytes.NewBufferString("")
 		buf.WriteString("new")
 		buf.Write([]byte(`-`))
 		buf.WriteString("text")
 
-		return string(buf.Bytes())
+		return string(buf.Bytes()), nil
 	})
 
-	exp.Run()
+	res, err := exp.Run()
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    str = res.(string)
+    fmt.Println(str)
 }
 
 func shouldRunTest() bool {
