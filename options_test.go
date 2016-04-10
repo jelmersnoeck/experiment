@@ -10,7 +10,7 @@ func TestDefaultOptions(t *testing.T) {
 	defaults := newOptions()
 
 	assert.Equal(t, "", defaults.name, "Default name")
-	assert.Equal(t, 10, defaults.percentage, "Default percentage")
+	assert.Equal(t, float64(10), defaults.percentage, "Default percentage")
 	assert.True(t, defaults.enabled, "Default enabler")
 	assert.Nil(t, defaults.comparison, "Default comparison method")
 }
@@ -22,7 +22,7 @@ func TestOptions_Name(t *testing.T) {
 
 func TestOptions_Percentage(t *testing.T) {
 	ops := newOptions(Percentage(5))
-	assert.Equal(t, 5, ops.percentage, "Overwriting percentage")
+	assert.Equal(t, float64(5), ops.percentage, "Overwriting percentage")
 }
 
 func TestOptions_Enabled(t *testing.T) {

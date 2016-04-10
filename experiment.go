@@ -19,6 +19,8 @@ type (
 		behaviours   map[string]*behaviour
 		observations map[string]Observation
 		rand         *rand.Rand
+		runs         float64
+		hits         float64
 	}
 )
 
@@ -89,6 +91,12 @@ func (e *Experiment) Result() (*experimentResult, error) {
 // After all the tests have run, it will use the Observation for the control
 // behaviour.
 func (e *Experiment) Run() (Observation, error) {
+	defer func() {
+		e.Lock()
+		e.runs += 1
+		e.Unlock()
+	}()
+
 	if _, ok := e.behaviours["control"]; !ok {
 		return nil, MissingControlError
 	}
@@ -96,6 +104,24 @@ func (e *Experiment) Run() (Observation, error) {
 	if len(e.behaviours) < 2 {
 		return nil, MissingTestError
 	}
+
+	if !e.shouldRun() {
+		for _, b := range e.behaviours {
+			if b.name == "control" {
+				obs := &experimentObservation{name: "control"}
+				return e.makeObservation(b, obs), nil
+			}
+		}
+
+		return nil, NoControlObservation
+	}
+
+	// if we reach this point, it means we should hit the tests
+	defer func() {
+		e.Lock()
+		e.hits += 1
+		e.Unlock()
+	}()
 
 	bhs := []*behaviour{}
 	for _, b := range e.behaviours {
@@ -112,6 +138,19 @@ func (e *Experiment) Run() (Observation, error) {
 	return nil, NoControlObservation
 }
 
+func (e *Experiment) shouldRun() bool {
+	if !e.opts.enabled {
+		return false
+	}
+
+	pct := e.runs / e.hits
+	if pct > e.opts.percentage {
+		return false
+	}
+
+	return true
+}
+
 // observe is the actual runner that goes through a list of behaviours and
 // executes them. It will do so in a random order.
 //
@@ -124,13 +163,10 @@ func (e *Experiment) observe(behaviours []*behaviour) {
 	for _, key := range e.rand.Perm(len(behaviours)) {
 		var wg sync.WaitGroup
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, b *behaviour, e *Experiment) {
-			start := time.Now()
+		go func(wg *sync.WaitGroup, b *behaviour) {
 			obs := &experimentObservation{name: b.name}
 			defer func() {
 				wg.Done()
-				obs.duration = time.Now().Sub(start)
-
 				// If the control throws a panic, the application should deal
 				// with this panic. The tests should never have an impact on the
 				// user, so for all the other behaviours we'll add a recover.
@@ -141,12 +177,22 @@ func (e *Experiment) observe(behaviours []*behaviour) {
 				}
 			}()
 
-			e.Lock()
-			e.observations[b.name] = obs
-			e.Unlock()
-
-			obs.value, obs.err = b.fnc(context.Background())
-		}(&wg, behaviours[key], e)
+			e.makeObservation(b, obs)
+		}(&wg, behaviours[key])
 		wg.Wait()
 	}
+}
+
+func (e *Experiment) makeObservation(b *behaviour, obs *experimentObservation) Observation {
+	start := time.Now()
+	defer func() {
+		obs.duration = time.Now().Sub(start)
+	}()
+
+	e.Lock()
+	e.observations[b.name] = obs
+	e.Unlock()
+
+	obs.value, obs.err = b.fnc(context.Background())
+	return obs
 }

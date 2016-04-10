@@ -4,7 +4,7 @@ type (
 	options struct {
 		name       string
 		enabled    bool
-		percentage int
+		percentage float64
 		comparison ComparisonMethod
 	}
 
@@ -38,7 +38,7 @@ func Name(name string) Option {
 // decide if the experiment should actually run when calling the `Run` method.
 func Percentage(p int) Option {
 	return func(opts *options) {
-		opts.percentage = p
+		opts.percentage = float64(p)
 	}
 }
 
