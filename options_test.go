@@ -16,7 +16,7 @@ func TestDefaultOptions(t *testing.T) {
 }
 
 func TestOptions_Name(t *testing.T) {
-	ops := newOptions(Name("test-options-name"))
+	ops := newOptions(name("test-options-name"))
 	assert.Equal(t, "test-options-name", ops.name, "Overwriting name")
 }
 

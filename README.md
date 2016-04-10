@@ -10,7 +10,7 @@ This is inspired by the [GitHub Scientist gem](https://github.com/github/scienti
 ```go
 func main() {
 	exp, err := experiment.New(
-		experiment.Name("my-test"),
+		"my-test",
 		experiment.Enabled(shouldRunTest()),
 		experiment.Percentage(10),
 		experiment.Compare(comparisonMethod),

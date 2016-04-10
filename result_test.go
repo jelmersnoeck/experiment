@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewResult_NoComparison(t *testing.T) {
-	exp, _ := experiment.New(experiment.Name("result-test"))
+	exp, _ := experiment.New("result-test")
 	runExperiment(exp)
 
 	res := experiment.NewResult(exp)
@@ -21,7 +21,7 @@ func TestNewResult_NoComparison(t *testing.T) {
 
 func TestNewResult_WithComparison(t *testing.T) {
 	exp, _ := experiment.New(
-		experiment.Name("result-test"),
+		"result-test",
 		experiment.Compare(comparisonMethod),
 	)
 	runExperiment(exp)

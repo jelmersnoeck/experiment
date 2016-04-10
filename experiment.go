@@ -32,19 +32,15 @@ var (
 	RunExperimentError   = errors.New("Experiment has not run yet, call `Run()` first.")
 )
 
-// New will create a new Experiment and set it up for later usage. If a new
-// experiment is created without name, an error will be returned.
-func New(options ...Option) (*Experiment, error) {
+// New will create a new Experiment and set it up for later usage.
+func New(nm string, options ...Option) (*Experiment, error) {
+	options = append(options, name(nm))
 	exp := &Experiment{
 		Mutex:        &sync.Mutex{},
 		opts:         newOptions(options...),
 		behaviours:   map[string]*behaviour{},
 		observations: map[string]Observation{},
 		rand:         rand.New(rand.NewSource(time.Now().UnixNano())),
-	}
-
-	if exp.Name() == "" {
-		return nil, NoNameError
 	}
 
 	return exp, nil

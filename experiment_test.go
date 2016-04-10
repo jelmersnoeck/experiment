@@ -9,22 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExperiment_New_NoName(t *testing.T) {
-	_, err := New()
-
-	assert.NotNil(t, err, "Experiment without name error")
-	assert.IsType(t, NoNameError, err, "Experiment without name error type")
-}
-
 func TestExperiment_New(t *testing.T) {
-	exp, err := New(Name("experiment-test"))
+	exp, err := New("experiment-test")
 
 	assert.Nil(t, err)
 	assert.Equal(t, "experiment-test", exp.Name(), "Experiment name from opts")
 }
 
 func TestExperiment_Control(t *testing.T) {
-	exp, _ := New(Name("control-test"))
+	exp, _ := New("control-test")
 	assert.Empty(t, exp.behaviours)
 
 	err := exp.Control(dummyControlFunc)
@@ -37,7 +30,7 @@ func TestExperiment_Control(t *testing.T) {
 }
 
 func TestExperiment_Test(t *testing.T) {
-	exp, _ := New(Name("control-test"))
+	exp, _ := New("control-test")
 	assert.Empty(t, exp.behaviours)
 
 	err := exp.Test("first", dummyTestFunc)
@@ -54,7 +47,7 @@ func TestExperiment_Test(t *testing.T) {
 }
 
 func TestExperiment_Run_NoControl(t *testing.T) {
-	exp, _ := New(Name("control-test"))
+	exp, _ := New("control-test")
 	exp.Test("test-1", dummyTestFunc)
 
 	_, err := exp.Run()
@@ -62,7 +55,7 @@ func TestExperiment_Run_NoControl(t *testing.T) {
 }
 
 func TestExperiment_Run_NoTest(t *testing.T) {
-	exp, _ := New(Name("control-test"))
+	exp, _ := New("control-test")
 	exp.Control(dummyControlFunc)
 
 	_, err := exp.Run()
@@ -70,7 +63,7 @@ func TestExperiment_Run_NoTest(t *testing.T) {
 }
 
 func TestExperiment_Run(t *testing.T) {
-	exp, _ := New(Name("control-test"))
+	exp, _ := New("control-test")
 
 	exp.Control(dummyControlFunc)
 	exp.Test("test-1", dummyTestFunc)
@@ -82,7 +75,7 @@ func TestExperiment_Run(t *testing.T) {
 }
 
 func TestExperiment_Run_WithTestPanic(t *testing.T) {
-	exp, _ := New(Name("control-test"))
+	exp, _ := New("control-test")
 
 	exp.Control(dummyControlFunc)
 	exp.Test("panic-test", dummyTestPanicFunc)
