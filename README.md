@@ -149,3 +149,23 @@ In this case, if the user is not confirmed yet, we will not run the experiment.
 When using a context for your request, you might have information that you need
 within your test. Using the `Context()` option, you can now set a context that
 will be used to pass along to your test functions.
+
+```go
+func main() {
+	ctx := context.WithValue(context.Background(), "key", "value")
+
+	exp := experiment.New(
+		"context-example",
+		experiment.Context(ctx),
+	)
+	exp.Control(myControlFunc)
+
+	// do more experiment setup and run it
+}
+
+func myControlFunc(ctx context.Context) (interface{}, error) {
+	key := ctx.Value("key")
+
+	return key, nil
+}
+```
