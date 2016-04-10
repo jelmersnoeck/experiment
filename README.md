@@ -7,6 +7,10 @@ This is inspired by the [GitHub Scientist gem](https://github.com/github/scienti
 
 ## Usage
 
+Below is the most basic example on how to create an experiment. We'll see if
+using a string with the notation of `""` compares to using a byte buffer and
+we'll evaluate the time difference.
+
 ```go
 func main() {
 	exp := experiment.New("my-test")
@@ -32,6 +36,46 @@ func main() {
 	fmt.Println(str)
 }
 ```
+
+First, we create an experiment with a new name. This will identify the
+experiment later on in our publishers.
+
+Further down, we set a control function. This is basically the functionality you
+are currently using in your codebase and want to evaluate against. The `Control`
+method is of the same structure as the `Test` method, in which it takes a
+`context.Context` to pass along any data and expects an interface and error as
+return value.
+
+The next step is to define tests. These tests are to see if the newly refactored
+code performs better and yields the same output. The sampling rate for these
+tests can be configured as mentioned later on in the options section.
+
+Once the setup is complete, it is time to run our experiment. This will run our
+control and tests(if applicable) in a random fashion. This means that one time
+the control could be run first, another time the test case could be run first.
+This is done so to avoid any accidental behavioural changes in any of the
+control or test code.
+
+The run method also returns an observation, which contains the return value and
+error from the control method. If something went wrong trying to run the
+experiment, this will also return the error it encountered. The control code
+is always executed as is in comparison to the test code. If an error happens
+within the test code which causes an exception, this will be swallowed and added
+to the observation.
+
+## Limitations
+
+### Stateless
+
+Due to the fact that it is not guaranteed that a test will run every time or in
+what order a test will run, it is suggested that experiments only do stateless
+changes.
+
+### Multiple tests
+
+Although it is possible to add multiple test cases to a single experiment, it is
+not suggested to do so. The test are run synchroniously which means this can add
+up to your response time.
 
 ## Run
 
