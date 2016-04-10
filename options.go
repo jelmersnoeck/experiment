@@ -4,6 +4,7 @@ type (
 	options struct {
 		name       string
 		enabled    bool
+		testMode   bool
 		percentage float64
 		comparison ComparisonMethod
 	}
@@ -61,5 +62,14 @@ func Enabled(b bool) Option {
 func Compare(m ComparisonMethod) Option {
 	return func(opts *options) {
 		opts.comparison = m
+	}
+}
+
+// TestMode is used to set the experiment runner in test mode. This means that
+// the tests will always be run, no matter what other options are given. This
+// also means that any potential panics will occur instead of being ignored.
+func TestMode() Option {
+	return func(opts *options) {
+		opts.testMode = true
 	}
 }

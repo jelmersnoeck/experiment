@@ -9,6 +9,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestExperiment_Init(t *testing.T) {
+	Init(Percentage(100))
+
+	exp := New("experiment-test")
+	assert.Equal(t, float64(100), exp.opts.percentage)
+
+	// reset the default options. This could otherwise interfere with our tests
+	defaultOptions = []Option{}
+}
+
 func TestExperiment_New(t *testing.T) {
 	exp := New("experiment-test")
 

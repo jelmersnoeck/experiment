@@ -30,14 +30,27 @@ var (
 	MissingTestError     = errors.New("No test function was given.")
 	NoControlObservation = errors.New("The control did not finish properly.")
 	RunExperimentError   = errors.New("Experiment has not run yet, call `Run()` first.")
+
+	defaultOptions = []Option{}
 )
+
+// Init is used to set default options. If you have several experiments running
+// and would like to set some default options, this is the way to go. Any
+// option given to the `New()` function will overwrite the default option.
+//
+// This can also be used to mark the setup for testing.
+func Init(options ...Option) {
+	defaultOptions = append(defaultOptions, options...)
+}
 
 // New will create a new Experiment and set it up for later usage.
 func New(nm string, options ...Option) *Experiment {
-	options = append(options, name(nm))
+	ops := defaultOptions
+	ops = append(ops, options...)
+	ops = append(ops, name(nm))
 	exp := &Experiment{
 		Mutex:        &sync.Mutex{},
-		opts:         newOptions(options...),
+		opts:         newOptions(ops...),
 		behaviours:   map[string]*behaviour{},
 		observations: map[string]Observation{},
 		rand:         rand.New(rand.NewSource(time.Now().UnixNano())),
@@ -135,6 +148,10 @@ func (e *Experiment) Run() (Observation, error) {
 }
 
 func (e *Experiment) shouldRun() bool {
+	if e.opts.testMode {
+		return true
+	}
+
 	if !e.opts.enabled {
 		return false
 	}
@@ -166,7 +183,9 @@ func (e *Experiment) observe(behaviours []*behaviour) {
 				// If the control throws a panic, the application should deal
 				// with this panic. The tests should never have an impact on the
 				// user, so for all the other behaviours we'll add a recover.
-				if obs.Name() == "control" {
+				// The second case is when we're in test mode. Within a test,
+				// we always want to know if something gives us a panic or not.
+				if obs.Name() == "control" || e.opts.testMode {
 					return
 				} else if r := recover(); r != nil {
 					obs.panic = r
