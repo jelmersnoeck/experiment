@@ -14,9 +14,9 @@ func TestNewResult_NoComparison(t *testing.T) {
 	runExperiment(exp)
 
 	res := experiment.NewResult(exp)
-	assert.Len(t, res.Candidates, 2)
-	assert.NotNil(t, res.Control)
-	assert.Empty(t, res.Mismatches)
+	assert.Len(t, res.Candidates(), 2)
+	assert.NotNil(t, res.Control())
+	assert.Empty(t, res.Mismatches())
 }
 
 func TestNewResult_WithComparison(t *testing.T) {
@@ -27,9 +27,9 @@ func TestNewResult_WithComparison(t *testing.T) {
 	runExperiment(exp)
 
 	res := experiment.NewResult(exp)
-	assert.Len(t, res.Candidates, 2)
-	assert.NotNil(t, res.Control)
-	assert.Len(t, res.Mismatches, 1)
+	assert.Len(t, res.Candidates(), 2)
+	assert.NotNil(t, res.Control())
+	assert.Len(t, res.Mismatches(), 1)
 }
 
 func runExperiment(exp *experiment.Experiment) {

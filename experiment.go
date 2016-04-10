@@ -92,12 +92,33 @@ func (e *Experiment) Test(name string, b BehaviourFunc) error {
 // expensive method to execute. If the test has not run yet, an error will be
 // returned. The `Run` method is expected to be used within the application
 // and thus should not be part of `Result`.
-func (e *Experiment) Result() (*experimentResult, error) {
+func (e *Experiment) Result() (Result, error) {
 	if len(e.observations) == 0 {
 		return nil, RunExperimentError
 	}
 
 	return NewResult(e), nil
+}
+
+// Publish will generate a new Result and use the Publishers given as an option
+// to broadcast the result. This method should be called within a goroutine as
+// it will most likely have an impact on performance due to publishing to
+// several sources and generating the result.
+func (e *Experiment) Publish() error {
+	if len(e.opts.publishers) == 0 {
+		return nil
+	}
+
+	res, err := e.Result()
+	if err != nil {
+		return err
+	}
+
+	for _, pub := range e.opts.publishers {
+		pub.Publish(res)
+	}
+
+	return nil
 }
 
 // Run will go through all the tests in a random order and run them one by one.

@@ -200,3 +200,29 @@ func myControlFunc(ctx context.Context) (interface{}, error) {
 	// logic with `thing`
 }
 ```
+
+### Publisher
+
+Once the experiment has run, it is useful to see the results. To do so, there
+is a `ResultPublisher` interface available. This has one method,
+`Publish(Result)` which will take care of publishing the result to the chosen
+output.
+
+Multiple publishers can be configured for a single experiment. For example, one
+could use a statsd publisher to pubish duration metrics to statsd and a Redis
+publisher to store the differences between the control and test results.
+
+```go
+func main() {
+	exp := experiment.New(
+		"context-example",
+		experiment.Publisher(myPublisher{}),
+		experiment.Publisher(redisPublisher{}),
+	)
+
+	// more experiment setup and run
+
+	// this will publish the results to `myPublisher` and `redisPublisher`.
+	exp.Publish()
+}
+```

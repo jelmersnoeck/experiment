@@ -18,6 +18,7 @@ func TestDefaultOptions(t *testing.T) {
 	assert.Nil(t, defaults.comparison, "Default comparison method")
 	assert.NotNil(t, defaults.ctx, "Default context")
 	assert.Len(t, defaults.before, 0)
+	assert.Len(t, defaults.publishers, 0)
 }
 
 func TestOptions_Name(t *testing.T) {
@@ -62,3 +63,13 @@ func TestOptions_Before(t *testing.T) {
 	ops := newOptions(Before(bf))
 	assert.Len(t, ops.before, 1)
 }
+
+func TestOptions_Pubishers(t *testing.T) {
+	pb := mockPub{}
+	ops := newOptions(Publisher(pb))
+	assert.Len(t, ops.publishers, 1)
+}
+
+type mockPub struct{}
+
+func (_ mockPub) Publish(Result) {}

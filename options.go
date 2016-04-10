@@ -11,6 +11,7 @@ type (
 		comparison ComparisonMethod
 		ctx        context.Context
 		before     []ContextMethod
+		publishers []ResultPublisher
 	}
 
 	ComparisonMethod func(Observation, Observation) bool
@@ -24,6 +25,7 @@ func newOptions(ops ...Option) options {
 		percentage: 10,
 		ctx:        context.Background(),
 		before:     []ContextMethod{},
+		publishers: []ResultPublisher{},
 	}
 
 	for _, o := range ops {
@@ -95,5 +97,15 @@ func Context(ctx context.Context) Option {
 func Before(bef ContextMethod) Option {
 	return func(opts *options) {
 		opts.before = append(opts.before, bef)
+	}
+}
+
+// Publisher adds a publisher to our setup. This will be used to publish our
+// experiment results to. Multiple publishers can be configured per experiment.
+// For example, a statsd publisher can be used to measure timings and a redis
+// publisher can be used to store comparison data.
+func Publisher(p ResultPublisher) Option {
+	return func(opts *options) {
+		opts.publishers = append(opts.publishers, p)
 	}
 }
