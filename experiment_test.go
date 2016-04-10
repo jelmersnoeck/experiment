@@ -10,14 +10,13 @@ import (
 )
 
 func TestExperiment_New(t *testing.T) {
-	exp, err := New("experiment-test")
+	exp := New("experiment-test")
 
-	assert.Nil(t, err)
 	assert.Equal(t, "experiment-test", exp.Name(), "Experiment name from opts")
 }
 
 func TestExperiment_Control(t *testing.T) {
-	exp, _ := New("control-test")
+	exp := New("control-test")
 	assert.Empty(t, exp.behaviours)
 
 	err := exp.Control(dummyControlFunc)
@@ -30,7 +29,7 @@ func TestExperiment_Control(t *testing.T) {
 }
 
 func TestExperiment_Test(t *testing.T) {
-	exp, _ := New("control-test")
+	exp := New("control-test")
 	assert.Empty(t, exp.behaviours)
 
 	err := exp.Test("first", dummyTestFunc)
@@ -47,7 +46,7 @@ func TestExperiment_Test(t *testing.T) {
 }
 
 func TestExperiment_Run_NoControl(t *testing.T) {
-	exp, _ := New("control-test")
+	exp := New("control-test")
 	exp.Test("test-1", dummyTestFunc)
 
 	_, err := exp.Run()
@@ -55,7 +54,7 @@ func TestExperiment_Run_NoControl(t *testing.T) {
 }
 
 func TestExperiment_Run_NoTest(t *testing.T) {
-	exp, _ := New("control-test")
+	exp := New("control-test")
 	exp.Control(dummyControlFunc)
 
 	_, err := exp.Run()
@@ -63,7 +62,7 @@ func TestExperiment_Run_NoTest(t *testing.T) {
 }
 
 func TestExperiment_Run(t *testing.T) {
-	exp, _ := New("control-test")
+	exp := New("control-test")
 
 	exp.Control(dummyControlFunc)
 	exp.Test("test-1", dummyTestFunc)
@@ -75,7 +74,7 @@ func TestExperiment_Run(t *testing.T) {
 }
 
 func TestExperiment_Run_WithTestPanic(t *testing.T) {
-	exp, _ := New("control-test")
+	exp := New("control-test")
 
 	exp.Control(dummyControlFunc)
 	exp.Test("panic-test", dummyTestPanicFunc)

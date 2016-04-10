@@ -33,7 +33,7 @@ var (
 )
 
 // New will create a new Experiment and set it up for later usage.
-func New(nm string, options ...Option) (*Experiment, error) {
+func New(nm string, options ...Option) *Experiment {
 	options = append(options, name(nm))
 	exp := &Experiment{
 		Mutex:        &sync.Mutex{},
@@ -43,7 +43,7 @@ func New(nm string, options ...Option) (*Experiment, error) {
 		rand:         rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
-	return exp, nil
+	return exp
 }
 
 func (e *Experiment) Name() string {

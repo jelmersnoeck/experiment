@@ -9,19 +9,10 @@ This is inspired by the [GitHub Scientist gem](https://github.com/github/scienti
 
 ```go
 func main() {
-	exp, err := experiment.New(
-		"my-test",
-		experiment.Enabled(shouldRunTest()),
-		experiment.Percentage(10),
-		experiment.Compare(comparisonMethod),
-	)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	exp := experiment.New("my-test")
 
 	exp.Control(func(ctx context.Context) (interface{}, error) {
-        return "my-text", nil
+		return "my-text", nil
 	})
 	exp.Test("buffer", func(ctx context.Context) (interface{}, error) {
 		buf := bytes.NewBufferString("")
@@ -39,16 +30,5 @@ func main() {
 	}
 	str = obs.Value().(string)
 	fmt.Println(str)
-}
-
-func shouldRunTest() bool {
-	return os.Getenv("ENV") == "prod"
-}
-
-func comparisonMethod(control experiment.Observation, test experiment.Observation) bool {
-	c := control.Value().(string)
-	t := test.Value().(string)
-
-	return c == t
 }
 ```
