@@ -17,6 +17,7 @@ func TestDefaultOptions(t *testing.T) {
 	assert.False(t, defaults.testMode, "Default testMode")
 	assert.Nil(t, defaults.comparison, "Default comparison method")
 	assert.NotNil(t, defaults.ctx, "Default context")
+	assert.Len(t, defaults.before, 0)
 }
 
 func TestOptions_Name(t *testing.T) {
@@ -54,4 +55,10 @@ func TestOptions_Context(t *testing.T) {
 	ops := newOptions(Context(ctx))
 	ctxVal := ops.ctx.Value("test-ctx")
 	assert.Equal(t, val, ctxVal)
+}
+
+func TestOptions_Before(t *testing.T) {
+	bf := func(ctx context.Context) context.Context { return ctx }
+	ops := newOptions(Before(bf))
+	assert.Len(t, ops.before, 1)
 }

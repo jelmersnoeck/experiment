@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	"golang.org/x/net/context"
 )
 
 type (
@@ -19,6 +21,7 @@ type (
 		rand         *rand.Rand
 		runs         float64
 		hits         float64
+		ctx          context.Context
 	}
 )
 
@@ -47,12 +50,14 @@ func New(nm string, options ...Option) *Experiment {
 	ops := defaultOptions
 	ops = append(ops, options...)
 	ops = append(ops, name(nm))
+	opts := newOptions(ops...)
 	exp := &Experiment{
 		Mutex:        &sync.Mutex{},
-		opts:         newOptions(ops...),
+		opts:         opts,
 		behaviours:   map[string]*behaviour{},
 		observations: map[string]Observation{},
 		rand:         rand.New(rand.NewSource(time.Now().UnixNano())),
+		ctx:          opts.ctx,
 	}
 
 	return exp
@@ -131,6 +136,10 @@ func (e *Experiment) Run() (Observation, error) {
 		e.Unlock()
 	}()
 
+	for _, bef := range e.opts.before {
+		e.ctx = bef(e.ctx)
+	}
+
 	bhs := []*behaviour{}
 	for _, b := range e.behaviours {
 		bhs = append(bhs, b)
@@ -207,6 +216,6 @@ func (e *Experiment) makeObservation(b *behaviour, obs *experimentObservation) O
 	e.observations[b.name] = obs
 	e.Unlock()
 
-	obs.value, obs.err = b.fnc(e.opts.ctx)
+	obs.value, obs.err = b.fnc(e.ctx)
 	return obs
 }

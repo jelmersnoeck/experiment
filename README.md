@@ -169,3 +169,34 @@ func myControlFunc(ctx context.Context) (interface{}, error) {
 	return key, nil
 }
 ```
+
+### Before
+
+When an expensive setup is required to do the test, we don't always want to run
+the setup until we actually execute the test case. The `Before` option allows us
+to set this up. This means that when an experiment is not run, this set up will
+not be executed.
+
+To do this, we make use of context.
+
+```go
+func main() {
+	exp := experiment.New(
+		"context-example",
+		experiment.Before(mySetup),
+	)
+
+	// do more experiment setup and run it
+}
+
+func mySetup(ctx context.Context) context.Context {
+	expensive := myExpensiveSetup()
+	return context.WithValue(ctx, "my-thing", expensive)
+}
+
+func myControlFunc(ctx context.Context) (interface{}, error) {
+	thing := ctx.Value("my-thing")
+
+	// logic with `thing`
+}
+```

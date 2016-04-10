@@ -2,6 +2,7 @@ package experiment
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -111,6 +112,24 @@ func TestExperiment_Run_WithContext(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, obs.Value().(string), val)
+}
+
+func TestExperiment_Run_Before(t *testing.T) {
+	beforeFunc := func(ctx context.Context) context.Context {
+		return context.WithValue(ctx, "my-key", "my-value")
+	}
+	checkFunc := func(ctx context.Context) (interface{}, error) {
+		fmt.Println(ctx)
+		str := ctx.Value("my-key")
+
+		assert.Equal(t, "my-value", str)
+		return nil, nil
+	}
+
+	exp := New("before-test", Before(beforeFunc))
+	exp.Control(checkFunc)
+	exp.Test("before-test", checkFunc)
+	exp.Run()
 }
 
 func dummyContextTestFunc(ctx context.Context) (interface{}, error) {

@@ -10,9 +10,11 @@ type (
 		percentage float64
 		comparison ComparisonMethod
 		ctx        context.Context
+		before     []ContextMethod
 	}
 
 	ComparisonMethod func(Observation, Observation) bool
+	ContextMethod    func(context.Context) context.Context
 	Option           func(*options)
 )
 
@@ -21,6 +23,7 @@ func newOptions(ops ...Option) options {
 		enabled:    true,
 		percentage: 10,
 		ctx:        context.Background(),
+		before:     []ContextMethod{},
 	}
 
 	for _, o := range ops {
@@ -83,5 +86,14 @@ func TestMode() Option {
 func Context(ctx context.Context) Option {
 	return func(opts *options) {
 		opts.ctx = ctx
+	}
+}
+
+// Before allows someone to set a setup operation that could be an expensive
+// task, and that shouldn't be executed every time. Context is injected in this
+// method so that the data that has been setup can be used at a later time.
+func Before(bef ContextMethod) Option {
+	return func(opts *options) {
+		opts.before = append(opts.before, bef)
 	}
 }
