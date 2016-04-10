@@ -31,7 +31,7 @@ func TestOptions_Enabled(t *testing.T) {
 }
 
 func TestOptions_Compare(t *testing.T) {
-	cmp := func(c interface{}, t interface{}) bool {
+	cmp := func(c Observation, t Observation) bool {
 		return false
 	}
 	ops := newOptions(Compare(cmp))

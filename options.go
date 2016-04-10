@@ -8,7 +8,7 @@ type (
 		comparison ComparisonMethod
 	}
 
-	ComparisonMethod func(interface{}, interface{}) bool
+	ComparisonMethod func(Observation, Observation) bool
 	Option           func(*options)
 )
 

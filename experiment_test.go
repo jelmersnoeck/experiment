@@ -55,23 +55,17 @@ func TestExperiment_Test(t *testing.T) {
 
 func TestExperiment_Run_NoControl(t *testing.T) {
 	exp, _ := New(Name("control-test"))
-
 	exp.Test("test-1", dummyTestFunc)
 
-	obs, err := exp.Run()
-
-	assert.Nil(t, obs)
+	_, err := exp.Run()
 	assert.IsType(t, err, MissingControlError)
 }
 
 func TestExperiment_Run_NoTest(t *testing.T) {
 	exp, _ := New(Name("control-test"))
-
 	exp.Control(dummyControlFunc)
 
-	obs, err := exp.Run()
-
-	assert.Nil(t, obs)
+	_, err := exp.Run()
 	assert.IsType(t, err, MissingTestError)
 }
 
@@ -84,7 +78,7 @@ func TestExperiment_Run(t *testing.T) {
 	obs, err := exp.Run()
 
 	assert.Nil(t, err)
-	assert.Equal(t, obs.Value.(string), "control")
+	assert.Equal(t, obs.Value().(string), "control")
 }
 
 func TestExperiment_Run_WithTestPanic(t *testing.T) {
@@ -96,7 +90,7 @@ func TestExperiment_Run_WithTestPanic(t *testing.T) {
 	obs, err := exp.Run()
 
 	assert.Nil(t, err)
-	assert.Equal(t, obs.Value.(string), "control")
+	assert.Equal(t, obs.Value().(string), "control")
 	assert.Len(t, exp.observations, 2)
 
 	panicObs := exp.observations["panic-test"]
