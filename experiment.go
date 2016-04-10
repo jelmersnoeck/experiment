@@ -37,6 +37,7 @@ var (
 // option given to the `New()` function will overwrite the default option.
 //
 // This can also be used to mark the setup for testing.
+// TODO: make separation between Init options and New options.
 func Init(options ...Option) {
 	defaultOptions = append(defaultOptions, options...)
 }
