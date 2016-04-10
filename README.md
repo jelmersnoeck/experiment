@@ -37,7 +37,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	str = obs.Value.(string)
+	str = obs.Value().(string)
 	fmt.Println(str)
 }
 
@@ -45,9 +45,9 @@ func shouldRunTest() bool {
 	return os.Getenv("ENV") == "prod"
 }
 
-func comparisonMethod(control interface{}, test interface{}) bool {
-	c := control.(string)
-	t := test.(string)
+func comparisonMethod(control experiment.Observation, test experiment.Observation) bool {
+	c := control.Value().(string)
+	t := test.Value().(string)
 
 	return c == t
 }
