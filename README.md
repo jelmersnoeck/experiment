@@ -9,35 +9,40 @@ This is inspired by the [GitHub Scientist gem](https://github.com/github/scienti
 
 ```go
 func main() {
-    exp := experiment.New(
+    exp, err := experiment.New(
         experiment.Name("my-test"),
-        experiment.Enabled(shouldRunTest),
+        experiment.Enabled(shouldRunTest()),
         experiment.Percentage(10),
         experiment.Compare(comparisonMethod),
     )
-    exp.Control(func() interface{} {
-        return "my-text"
-    })
-    exp.Test(func() interface{} {
-        buf := bytes.NewBufferString("")
-        buf.WriteString("new")
-        buf.Write([]byte(`-`))
-        buf.WriteString("text")
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
 
-        return string(buf.Bytes())
-    })
+	exp.Control(func() interface{} {
+		return "my-text"
+	})
+	exp.Test(func() interface{} {
+		buf := bytes.NewBufferString("")
+		buf.WriteString("new")
+		buf.Write([]byte(`-`))
+		buf.WriteString("text")
 
-    exp.Run()
+		return string(buf.Bytes())
+	})
+
+	exp.Run()
 }
 
 func shouldRunTest() bool {
-    return os.Getenv("ENV") == "prod"
+	return os.Getenv("ENV") == "prod"
 }
 
 func comparisonMethod(control interface{}, test interface{}) bool {
-    c := control.(string)
-    t := test.(string)
+	c := control.(string)
+	t := test.(string)
 
-    return c == t
+	return c == t
 }
 ```
