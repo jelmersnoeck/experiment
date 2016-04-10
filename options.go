@@ -52,3 +52,14 @@ func Enabled(b bool) Option {
 		opts.enabled = b
 	}
 }
+
+// Compare is the method that is used to compare the results from the test. The
+// control and test function should always return a value. These values will
+// then be injected in the compare method. When we publish the results for this
+// test, we will use the value from this compare method to look at the success
+// rate of our test.
+func Compare(m ComparisonMethod) Option {
+	return func(opts *options) {
+		opts.comparison = m
+	}
+}

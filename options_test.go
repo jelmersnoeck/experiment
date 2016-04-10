@@ -29,3 +29,11 @@ func TestOptions_Enabled(t *testing.T) {
 	ops := newOptions(Enabled(false))
 	assert.False(t, ops.enabled, "Overwriting enabler")
 }
+
+func TestOptions_Compare(t *testing.T) {
+	cmp := func(c interface{}, t interface{}) bool {
+		return false
+	}
+	ops := newOptions(Compare(cmp))
+	assert.NotNil(t, ops.comparison, "Overwriting comparison method")
+}
