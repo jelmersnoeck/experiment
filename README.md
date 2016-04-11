@@ -270,3 +270,30 @@ func main() {
 	exp.Publish()
 }
 ```
+
+## Testing
+
+When you're testing you're application, it is important to see all the issues.
+With the panic repression and random runs, this is impossible. For this reason,
+there is the option `TestMode` available. Note, this should only be used whilst
+testing!
+
+The common case to set this is use the `Init()` function in your test helpers
+to set this option.
+
+```go
+package application_test
+
+import (
+	"testing"
+
+	"github.com/jelmersnoeck/experiment"
+)
+
+func init() {
+	experiment.Init(experiment.TestMode())
+}
+
+// wherever you use an experiment, it will now panic on mismatch, panic when
+// your code throws a panic and run all tests, regardless of other options.
+```
