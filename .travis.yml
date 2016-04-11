@@ -1,0 +1,11 @@
+language: go
+before_script:
+  - go get -u golang.org/x/net/context github.com/stretchr/testify/assert
+script: go test -v -bench=. -run=. ./...
+os:
+  - linux
+  - osx
+go:
+    - 1.5
+    - 1.6
+    - tip
