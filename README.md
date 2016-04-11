@@ -100,6 +100,10 @@ default values.
 - Comparison (nil)
 - Percentage (10)
 - Enabled (true)
+- Context (context.Background())
+- Before (nil)
+- Publisher (nil)
+- Testing (false)
 
 ### Comparison
 
