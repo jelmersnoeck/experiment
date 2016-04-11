@@ -137,6 +137,11 @@ func comparisonMethod(control experiment.Observation, test experiment.Observatio
 }
 ```
 
+With a `Compare` option set, the result generator (called by `Result()`) will go
+over all observations and call this comparison method with both the control
+observation and the test case observation. It will then store all mismatched
+separately in the `Mismatches()` method on the `Result` object.
+
 ### Percentage
 
 Sometimes, you don't want to run the experiment for every request. To do this,
@@ -150,7 +155,7 @@ disables the test cases to be run.
 func main() {
 	exp := experiment.New(
 		"my-experiment",
-		experiment.Percentage(10),
+		experiment.Percentage(25),
 	)
 
 	// add control/tests
@@ -165,6 +170,9 @@ func main() {
 	fmt.Println(str)
 }
 ```
+
+Now that we've set the percentage to 25, the experiment will only be run 1/4
+times. This is good for sampling data and rolling it out sequentially.
 
 ### Enabled
 
@@ -218,6 +226,11 @@ func myControlFunc(ctx context.Context) (interface{}, error) {
 }
 ```
 
+In the above example, we create a new context and pass it along to the new
+experiment. The experiment runner is aware of this and passes that to any
+function that takes a `context.Context` type (our test and control cases). This
+makes it then available for these functions to use.
+
 ### Before
 
 When an expensive setup is required to do the test, we don't always want to run
@@ -249,6 +262,15 @@ func myControlFunc(ctx context.Context) (interface{}, error) {
 }
 ```
 
+In the above example, we create a new expensive setup somehow (this is not
+implemented in the example). We then pass this function to our new experiment.
+
+If the experiment runner decides to run the experiment - based on percentage and
+other options - the setup will be executed. If not, the setup won't be touched.
+
+It is common practice to put shared values from the setup in the context which
+can then be used later in the test and control cases.
+
 ### Publisher
 
 Once the experiment has run, it is useful to see the results. To do so, there
@@ -264,7 +286,7 @@ publisher to store the differences between the control and test results.
 func main() {
 	exp := experiment.New(
 		"context-example",
-		experiment.Publisher(myPublisher{}),
+		experiment.Publisher(statsdPublisher{}),
 		experiment.Publisher(redisPublisher{}),
 	)
 
@@ -274,6 +296,10 @@ func main() {
 	exp.Publish()
 }
 ```
+
+Here we register two publishers. The statsd publisher will most likely publish
+the durations of the result, making them available for graphs. The Redis
+publisher can be used to store the mismatches that need investigating later on.
 
 ## Testing
 
