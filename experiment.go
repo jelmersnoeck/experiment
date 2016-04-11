@@ -185,7 +185,7 @@ func (e *Experiment) shouldRun() bool {
 		return false
 	}
 
-	pct := e.runs / e.hits
+	pct := (e.hits / e.runs) * 100.0
 	if pct > e.opts.percentage {
 		return false
 	}
