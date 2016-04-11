@@ -35,8 +35,6 @@ func newOptions(ops ...Option) options {
 	return opts
 }
 
-// name sets the name of the experiment. This will be used to build a report. If
-// no name is given as an option to `New()`, the `NoNameError` will be returned.
 func name(name string) Option {
 	return func(opts *options) {
 		opts.name = name

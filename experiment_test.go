@@ -60,7 +60,7 @@ func TestExperiment_Run_NoControl(t *testing.T) {
 	exp.Test("test-1", dummyTestFunc)
 
 	_, err := exp.Run()
-	assert.IsType(t, err, MissingControlError)
+	assert.IsType(t, err, ErrMissingControl)
 }
 
 func TestExperiment_Run_NoTest(t *testing.T) {
@@ -68,7 +68,7 @@ func TestExperiment_Run_NoTest(t *testing.T) {
 	exp.Control(dummyControlFunc)
 
 	_, err := exp.Run()
-	assert.IsType(t, err, MissingTestError)
+	assert.IsType(t, err, ErrMissingTest)
 }
 
 func TestExperiment_Run(t *testing.T) {

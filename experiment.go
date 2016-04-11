@@ -26,11 +26,18 @@ type (
 )
 
 var (
-	NoNameError          = errors.New("No name given for this experiment.")
-	MissingControlError  = errors.New("No control function was given.")
-	MissingTestError     = errors.New("No test function was given.")
-	NoControlObservation = errors.New("The control did not finish properly.")
-	RunExperimentError   = errors.New("Experiment has not run yet, call `Run()` first.")
+	// ErrMissingControl is returned when there is no control function set for the
+	// experiment
+	ErrMissingControl = errors.New("No control function was given.")
+	// ErrMissingTest is returned when the experiment is run but there are no test
+	// cases given to run.
+	ErrMissingTest = errors.New("No test function was given.")
+	// ErrNoControlObservation is returned in the case when there is something
+	// wrong with running the control.
+	ErrNoControlObservation = errors.New("The control did not finish properly.")
+	// ErrRunExperiment is returned when the experiment is required to have run
+	// but has not run yet.
+	ErrRunExperiment = errors.New("Experiment has not run yet, call `Run()` first.")
 
 	defaultOptions = []Option{}
 )
@@ -94,7 +101,7 @@ func (e *Experiment) Test(name string, b BehaviourFunc) error {
 // and thus should not be part of `Result`.
 func (e *Experiment) Result() (Result, error) {
 	if len(e.observations) == 0 {
-		return nil, RunExperimentError
+		return nil, ErrRunExperiment
 	}
 
 	return NewResult(e), nil
@@ -132,11 +139,11 @@ func (e *Experiment) Run() (Observation, error) {
 	}()
 
 	if _, ok := e.behaviours["control"]; !ok {
-		return nil, MissingControlError
+		return nil, ErrMissingControl
 	}
 
 	if len(e.behaviours) < 2 {
-		return nil, MissingTestError
+		return nil, ErrMissingTest
 	}
 
 	if !e.shouldRun() {
@@ -147,7 +154,7 @@ func (e *Experiment) Run() (Observation, error) {
 			}
 		}
 
-		return nil, NoControlObservation
+		return nil, ErrNoControlObservation
 	}
 
 	// if we reach this point, it means we should hit the tests
@@ -173,7 +180,7 @@ func (e *Experiment) Run() (Observation, error) {
 		}
 	}
 
-	return nil, NoControlObservation
+	return nil, ErrNoControlObservation
 }
 
 func (e *Experiment) shouldRun() bool {
