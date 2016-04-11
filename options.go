@@ -14,9 +14,17 @@ type (
 		publishers []ResultPublisher
 	}
 
+	// ComparisonMethod is used as an interface for creating a method in which we
+	// want to compare the observations of a test. This being the Control and a
+	// random Test case.
 	ComparisonMethod func(Observation, Observation) bool
-	ContextMethod    func(context.Context) context.Context
-	Option           func(*options)
+
+	// ContextMethod is a wrapper around a method that is purely used to take a
+	// context, adjust it and return a new context with the adjusted values.
+	ContextMethod func(context.Context) context.Context
+
+	// Option is a function that is used to create a new experiiment.
+	Option func(*options)
 )
 
 func newOptions(ops ...Option) options {
