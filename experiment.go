@@ -70,6 +70,7 @@ func New(nm string, options ...Option) *Experiment {
 	return exp
 }
 
+// Name is the name of the experiment, given when creating the experiment.
 func (e *Experiment) Name() string {
 	return e.opts.name
 }
@@ -84,7 +85,7 @@ func (e *Experiment) Control(b BehaviourFunc) error {
 // already used, an error will be returned.
 func (e *Experiment) Test(name string, b BehaviourFunc) error {
 	if _, ok := e.behaviours[name]; ok {
-		return errors.New(fmt.Sprintf("Behaviour `%s` already exists.", name))
+		return fmt.Errorf("Behaviour `%s` already exists.", name)
 	}
 
 	e.Lock()
@@ -134,7 +135,7 @@ func (e *Experiment) Publish() error {
 func (e *Experiment) Run() (Observation, error) {
 	defer func() {
 		e.Lock()
-		e.runs += 1
+		e.runs++
 		e.Unlock()
 	}()
 
@@ -160,7 +161,7 @@ func (e *Experiment) Run() (Observation, error) {
 	// if we reach this point, it means we should hit the tests
 	defer func() {
 		e.Lock()
-		e.hits += 1
+		e.hits++
 		e.Unlock()
 	}()
 
