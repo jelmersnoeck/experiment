@@ -1,5 +1,7 @@
 package experiment
 
+import "fmt"
+
 type (
 	// Result represents the result from running all the observations and comparing
 	// them with the given compare method.
@@ -66,6 +68,10 @@ func (r *experimentResult) evaluate() {
 	for _, c := range r.candidates {
 		if !r.experiment.opts.comparison(r.control, c) {
 			r.mismatches = append(r.mismatches, c)
+
+			if r.experiment.opts.testMode {
+				panic(fmt.Sprintf("Data mismatch in %v", c))
+			}
 		}
 	}
 }
