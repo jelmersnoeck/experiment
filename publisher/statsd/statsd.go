@@ -2,6 +2,7 @@ package statsd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/alexcesaro/statsd"
 	"github.com/jelmersnoeck/experiment"
@@ -32,7 +33,10 @@ func (p *statsdPublisher) Publish(exp *experiment.Experiment, res experiment.Res
 }
 
 func (p *statsdPublisher) publishObservation(ob experiment.Observation) {
-	p.cl.Timing(p.bucketName(ob.Name()), ob.Duration())
+	p.cl.Timing(
+		p.bucketName(ob.Name()),
+		ob.Duration().Nanoseconds()*time.Millisecond,
+	)
 }
 
 func (p *statsdPublisher) bucketName(name string) string {
