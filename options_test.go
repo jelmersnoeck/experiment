@@ -72,4 +72,4 @@ func TestOptions_Pubishers(t *testing.T) {
 
 type mockPub struct{}
 
-func (p mockPub) Publish(Result) {}
+func (p mockPub) Publish(*Experiment, Result) {}

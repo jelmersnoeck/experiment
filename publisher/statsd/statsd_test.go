@@ -9,6 +9,6 @@ func ExampleNew() {
 	exp := experiment.New("test")
 	res, _ := exp.Result()
 
-	pub, _ := statsd.New(exp)
-	pub.Publish(res)
+	pub, _ := statsd.New()
+	pub.Publish(exp, res)
 }

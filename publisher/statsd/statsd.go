@@ -14,16 +14,17 @@ type statsdPublisher struct {
 
 // New creates a new ResultPublisher that will publish results to a statsd
 // client.
-func New(exp *experiment.Experiment, opts ...statsd.Option) (experiment.ResultPublisher, error) {
+func New(opts ...statsd.Option) (experiment.ResultPublisher, error) {
 	cl, err := statsd.New(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &statsdPublisher{cl, exp}, nil
+	return &statsdPublisher{cl: cl}, nil
 }
 
-func (p *statsdPublisher) Publish(res experiment.Result) {
+func (p *statsdPublisher) Publish(exp *experiment.Experiment, res experiment.Result) {
+	p.exp = exp
 	p.publishObservation(res.Control())
 	for _, ob := range res.Candidates() {
 		p.publishObservation(ob)

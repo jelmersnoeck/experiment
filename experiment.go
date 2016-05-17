@@ -123,7 +123,7 @@ func (e *Experiment) Publish() error {
 	}
 
 	for _, pub := range e.opts.publishers {
-		pub.Publish(res)
+		pub.Publish(e, res)
 	}
 
 	return nil

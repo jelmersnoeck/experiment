@@ -4,5 +4,5 @@ package experiment
 // publishers can be used for a single experiment with each having their own
 // purpose.
 type ResultPublisher interface {
-	Publish(Result)
+	Publish(*Experiment, Result)
 }
