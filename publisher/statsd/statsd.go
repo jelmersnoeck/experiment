@@ -35,7 +35,7 @@ func (p *statsdPublisher) Publish(exp *experiment.Experiment, res experiment.Res
 func (p *statsdPublisher) publishObservation(ob experiment.Observation) {
 	p.cl.Timing(
 		p.bucketName(ob.Name()),
-		ob.Duration().Nanoseconds()*time.Millisecond,
+		ob.Duration().Nanoseconds()*int64(time.Millisecond),
 	)
 }
 
