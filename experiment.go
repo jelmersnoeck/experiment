@@ -21,7 +21,6 @@ type (
 		rand         *rand.Rand
 		runs         float64
 		hits         float64
-		ctx          context.Context
 	}
 )
 
@@ -64,7 +63,6 @@ func New(nm string, options ...Option) *Experiment {
 		behaviours:   map[string]*behaviour{},
 		observations: map[string]Observation{},
 		rand:         rand.New(rand.NewSource(time.Now().UnixNano())),
-		ctx:          opts.ctx,
 	}
 
 	return exp
@@ -132,7 +130,11 @@ func (e *Experiment) Publish() error {
 // Run will go through all the tests in a random order and run them one by one.
 // After all the tests have run, it will use the Observation for the control
 // behaviour.
-func (e *Experiment) Run() (Observation, error) {
+func (e *Experiment) Run(ctx context.Context) (Observation, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	defer func() {
 		e.Lock()
 		e.runs++
@@ -151,7 +153,7 @@ func (e *Experiment) Run() (Observation, error) {
 		for _, b := range e.behaviours {
 			if b.name == "control" {
 				obs := &experimentObservation{name: "control"}
-				return e.makeObservation(b, obs), nil
+				return e.makeObservation(ctx, b, obs), nil
 			}
 		}
 
@@ -166,14 +168,14 @@ func (e *Experiment) Run() (Observation, error) {
 	}()
 
 	for _, bef := range e.opts.before {
-		e.ctx = bef(e.ctx)
+		ctx = bef(ctx)
 	}
 
 	bhs := []*behaviour{}
 	for _, b := range e.behaviours {
 		bhs = append(bhs, b)
 	}
-	e.observe(bhs)
+	e.observe(ctx, bhs)
 
 	for _, o := range e.observations {
 		if o.Name() == "control" {
@@ -209,7 +211,7 @@ func (e *Experiment) shouldRun() bool {
 // of the tests, the user would not notice. However, if a panic happens in the
 // control, it will actually be triggered. This happens after we collect all
 // the data.
-func (e *Experiment) observe(behaviours []*behaviour) {
+func (e *Experiment) observe(ctx context.Context, behaviours []*behaviour) {
 	for _, key := range e.rand.Perm(len(behaviours)) {
 		var wg sync.WaitGroup
 		wg.Add(1)
@@ -229,13 +231,13 @@ func (e *Experiment) observe(behaviours []*behaviour) {
 				}
 			}()
 
-			e.makeObservation(b, obs)
+			e.makeObservation(ctx, b, obs)
 		}(&wg, behaviours[key])
 		wg.Wait()
 	}
 }
 
-func (e *Experiment) makeObservation(b *behaviour, obs *experimentObservation) Observation {
+func (e *Experiment) makeObservation(ctx context.Context, b *behaviour, obs *experimentObservation) Observation {
 	start := time.Now()
 	defer func() {
 		obs.duration = time.Now().Sub(start)
@@ -245,6 +247,6 @@ func (e *Experiment) makeObservation(b *behaviour, obs *experimentObservation) O
 	e.observations[b.name] = obs
 	e.Unlock()
 
-	obs.value, obs.err = b.fnc(e.ctx)
+	obs.value, obs.err = b.fnc(ctx)
 	return obs
 }

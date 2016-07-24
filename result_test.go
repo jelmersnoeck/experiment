@@ -36,7 +36,7 @@ func runExperiment(exp *experiment.Experiment) {
 	exp.Control(dummyControlFunc)
 	exp.Test("test1", dummyTestFunc)
 	exp.Test("test2", dummyCompareTestFunc)
-	exp.Run()
+	exp.Run(context.Background())
 }
 
 func dummyTestFunc(ctx context.Context) (interface{}, error) {

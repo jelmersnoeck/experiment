@@ -30,7 +30,7 @@ func main() {
 		return string(buf.Bytes()), nil
 	})
 
-	obs, err := exp.Run()
+	obs, err := exp.Run(nil)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -103,7 +103,6 @@ default values.
 - Comparison (nil)
 - Percentage (10)
 - Enabled (true)
-- Context (context.Background())
 - Before (nil)
 - Publisher (nil)
 - Testing (false)
@@ -126,7 +125,7 @@ func main() {
 
 	// add control/tests
 
-	exp.Run()
+	exp.Run(nil)
 
 	result := exp.Result()
 	fmt.Println(result.Mismatches)
@@ -203,37 +202,6 @@ func shouldRunExperiment(user User) bool {
 
 In this case, if the user is not confirmed yet, we will not run the experiment.
 
-### Context
-
-When using a context for your request, you might have information that you need
-within your test. Using the `Context()` option, you can now set a context that
-will be used to pass along to your test functions.
-
-```go
-func main() {
-	ctx := context.WithValue(context.Background(), "key", "value")
-
-	exp := experiment.New(
-		"context-example",
-		experiment.Context(ctx),
-	)
-	exp.Control(myControlFunc)
-
-	// do more experiment setup and run it
-}
-
-func myControlFunc(ctx context.Context) (interface{}, error) {
-	key := ctx.Value("key")
-
-	return key, nil
-}
-```
-
-In the above example, we create a new context and pass it along to the new
-experiment. The experiment runner is aware of this and passes that to any
-function that takes a `context.Context` type (our test and control cases). This
-makes it then available for these functions to use.
-
 ### Before
 
 When an expensive setup is required to do the test, we don't always want to run
@@ -303,6 +271,36 @@ func main() {
 Here we register two publishers. The statsd publisher will most likely publish
 the durations of the result, making them available for graphs. The Redis
 publisher can be used to store the mismatches that need investigating later on.
+
+## Context
+
+When using a context for your request, you might have information that you need
+within your test. By passing in a context to the `Run()` method, you can pass
+through this information.
+
+```go
+func main() {
+	ctx := context.WithValue(context.Background(), "key", "value")
+
+	exp := experiment.New(
+		"context-example",
+	)
+	exp.Control(myControlFunc)
+
+    exp.Run(ctx)
+}
+
+func myControlFunc(ctx context.Context) (interface{}, error) {
+	key := ctx.Value("key")
+
+	return key, nil
+}
+```
+
+In the above example, we create a new context and pass it along to our runner.
+The experiment runner is aware of this and passes that to any function that
+takes a `context.Context` type (our test and control cases). This makes it then
+available for these functions to use.
 
 ## Testing
 

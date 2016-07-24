@@ -59,7 +59,7 @@ func TestExperiment_Run_NoControl(t *testing.T) {
 	exp := New("control-test")
 	exp.Test("test-1", dummyTestFunc)
 
-	_, err := exp.Run()
+	_, err := exp.Run(context.Background())
 	assert.IsType(t, err, ErrMissingControl)
 }
 
@@ -67,7 +67,7 @@ func TestExperiment_Run_NoTest(t *testing.T) {
 	exp := New("control-test")
 	exp.Control(dummyControlFunc)
 
-	_, err := exp.Run()
+	_, err := exp.Run(context.Background())
 	assert.IsType(t, err, ErrMissingTest)
 }
 
@@ -77,7 +77,7 @@ func TestExperiment_Run(t *testing.T) {
 	exp.Control(dummyControlFunc)
 	exp.Test("test-1", dummyTestFunc)
 
-	obs, err := exp.Run()
+	obs, err := exp.Run(context.Background())
 
 	assert.Nil(t, err)
 	assert.Equal(t, obs.Value().(string), "control")
@@ -89,7 +89,7 @@ func TestExperiment_Run_WithTestPanic(t *testing.T) {
 	exp.Control(dummyControlFunc)
 	exp.Test("panic-test", dummyTestPanicFunc)
 
-	obs, err := exp.Run()
+	obs, err := exp.Run(context.Background())
 
 	assert.Nil(t, err)
 	assert.Equal(t, obs.Value().(string), "control")
@@ -103,14 +103,26 @@ func TestExperiment_Run_WithContext(t *testing.T) {
 	val := "my-context-test"
 	ctx := context.WithValue(context.Background(), "ctx-test", val)
 
-	exp := New("context-test", Context(ctx))
+	exp := New("context-test")
 	exp.Control(dummyContextTestFunc)
 	exp.Test("context-test", dummyTestFunc)
 
-	obs, err := exp.Run()
+	obs, err := exp.Run(ctx)
 
 	assert.Nil(t, err)
 	assert.Equal(t, obs.Value().(string), val)
+}
+
+func TestExperiment_Run_Without_Context(t *testing.T) {
+	exp := New("control-test")
+
+	exp.Control(dummyControlFunc)
+	exp.Test("test-1", dummyTestFunc)
+
+	obs, err := exp.Run(nil)
+
+	assert.Nil(t, err)
+	assert.Equal(t, obs.Value().(string), "control")
 }
 
 func TestExperiment_Run_Before(t *testing.T) {
@@ -127,7 +139,7 @@ func TestExperiment_Run_Before(t *testing.T) {
 	exp := New("before-test", Before(beforeFunc))
 	exp.Control(checkFunc)
 	exp.Test("before-test", checkFunc)
-	exp.Run()
+	exp.Run(context.Background())
 }
 
 func dummyContextTestFunc(ctx context.Context) (interface{}, error) {

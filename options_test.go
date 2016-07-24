@@ -16,7 +16,6 @@ func TestDefaultOptions(t *testing.T) {
 	assert.True(t, defaults.enabled, "Default enabler")
 	assert.False(t, defaults.testMode, "Default testMode")
 	assert.Nil(t, defaults.comparison, "Default comparison method")
-	assert.NotNil(t, defaults.ctx, "Default context")
 	assert.Len(t, defaults.before, 0)
 	assert.Len(t, defaults.publishers, 0)
 }
@@ -47,15 +46,6 @@ func TestOptions_Compare(t *testing.T) {
 	}
 	ops := newOptions(Compare(cmp))
 	assert.NotNil(t, ops.comparison, "Overwriting comparison method")
-}
-
-func TestOptions_Context(t *testing.T) {
-	val := "foo"
-	ctx := context.WithValue(context.Background(), "test-ctx", val)
-
-	ops := newOptions(Context(ctx))
-	ctxVal := ops.ctx.Value("test-ctx")
-	assert.Equal(t, val, ctxVal)
 }
 
 func TestOptions_Before(t *testing.T) {
