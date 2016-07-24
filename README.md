@@ -95,6 +95,8 @@ The Observation contains several methods. The first one is the `Value()`. This
 is the value which is returned by the control function that is specified. There
 is also an `Error()` method available, which contains the error returned.
 
+The `Run()` method takes a `context.Context` type, which could be nil.
+
 ## Options
 
 When creating a new experiment, one can add several options. Some of them have
@@ -162,7 +164,7 @@ func main() {
 
 	// add control/tests
 
-	obs, err := exp.Run()
+	obs, err := exp.Run(nil)
 	if err != nil {
 		fmt.Println(err)
 		return
