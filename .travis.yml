@@ -1,11 +1,15 @@
 language: go
 before_script:
-  - go get -u golang.org/x/net/context github.com/stretchr/testify/assert
-script: go test -v -bench=. -run=. ./...
+- go get -u golang.org/x/net/context github.com/stretchr/testify/assert golang.org/x/tools/cmd/cover github.com/mattn/goveralls
+script: go test -v -covermode=count -coverprofile=coverage.out -bench=. -run=. $(go list ./... | grep -v 'vendor')
+after_script: $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 os:
-  - linux
-  - osx
+- linux
+- osx
 go:
-    - 1.5
-    - 1.6
-    - tip
+- 1.5
+- 1.6
+- tip
+env:
+  global:
+    secure: rr4WSPhWJEPbjGgCDbE6194v8IPlQoqQOCJlTIUwp+MK+zgTeHtV9SO2CBog/hNpd9iHNTtt/H5ZkDZtW1qjvvKrhzzEE3mDllvUBMwzVt5wDvT5dUtnGCDjuUYacImN9egvbkhTLaYBNy42DVpjCzqoXiQdJwUIwD9g9z8wexJ6e7IiHSi7uWuNDgi3/5JFBlv4TfYIMlurW085uigabOAC+8kcOfkujnjGzvczYXlUpG8i/rvLN96T50WFw3fi5cYHtKLWQsZHVglcDYjr9vh9r1ojjq9KFZsLvjCjLYNjUqcyzMz/0e3irvSegaQPPCKSu+xtfXumxHWypwo6pKAOPBi2HZ95C+yk8zdSxjQ7xfUg27xnQFamalv1JrfBGGnDgswDNmRF8/2iU8GcnrlMdRVjQopvnLgU1oph0rU+9lERKAsyA9O/ygaboseieu/zJ1PyO+2xjiyccVxATMmK3zBqscHNJSVi39Ks3e81p3HfG5AcxU6TKM14wOOObU8ySaq3eUhFvW2JUibJ8j/s2Qi9hmBe/fXB1920G+bxD9CFif447opvq5Epq85iqU6JvXTlfiQ0PV9QDwBSgxpxlAltNbtFYvnotwVEanBI03geYdkF2nmTudeFVtfPzrPe9arGXNYQ9xS9UJqSBlxA1NSlK+3C85UwSqXkuG8=
