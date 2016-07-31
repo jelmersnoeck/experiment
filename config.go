@@ -14,7 +14,6 @@ type (
 		Percentage float32 `json:"percentage"`
 
 		BeforeFilters []BeforeFilter
-		Publishers    []ResultPublisher
 		Comparison    ComparisonMethod
 	}
 
@@ -29,29 +28,9 @@ type (
 )
 
 // DefaultConfig sets up a default configuration where the Percentage is 100.
-func DefaultConfig(name string) *Config {
-	return &Config{
+func DefaultConfig(name string) Config {
+	return Config{
 		Name:       name,
 		Percentage: 100,
 	}
-}
-
-func (c *Config) AddBeforeFilter(bf BeforeFilter) {
-	if c.BeforeFilters == nil {
-		c.BeforeFilters = []BeforeFilter{bf}
-	} else {
-		c.BeforeFilters = append(c.BeforeFilters, bf)
-	}
-}
-
-func (c *Config) AddPublisher(rp ResultPublisher) {
-	if c.Publishers == nil {
-		c.Publishers = []ResultPublisher{rp}
-	} else {
-		c.Publishers = append(c.Publishers, rp)
-	}
-}
-
-func (c *Config) SetComparisonMethod(cm ComparisonMethod) {
-	c.Comparison = cm
 }

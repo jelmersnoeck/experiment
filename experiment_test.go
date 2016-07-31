@@ -100,8 +100,11 @@ func TestExperiment_Run_Before(t *testing.T) {
 		return nil, nil
 	}
 
-	cfg := DefaultConfig("test")
-	cfg.AddBeforeFilter(beforeFunc)
+	cfg := Config{
+		Name:          "test",
+		Percentage:    100,
+		BeforeFilters: []BeforeFilter{beforeFunc},
+	}
 
 	exp := newExperiment(cfg)
 	exp.Control(checkFunc)
@@ -123,7 +126,7 @@ func BenchmarkExperiment_Run(b *testing.B) {
 	})
 }
 
-func newExperiment(cfg *Config) *Experiment {
+func newExperiment(cfg Config) *Experiment {
 	return &Experiment{
 		Config: cfg,
 	}

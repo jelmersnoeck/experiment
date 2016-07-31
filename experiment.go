@@ -17,7 +17,7 @@ type (
 	// experiments against controls and for a given number of users.
 	Experiment struct {
 		sync.Mutex
-		Config *Config
+		Config Config
 
 		hits       float32
 		runs       float32
@@ -38,6 +38,11 @@ var (
 	// but has not run yet.
 	ErrRunExperiment = errors.New("Experiment has not run yet, call `Run()` first.")
 )
+
+// New will create a new experiment with the given config.
+func New(cfg Config) *Experiment {
+	return &Experiment{Config: cfg}
+}
 
 // Control sets the control method for this experiment. The control should only
 // be set once and this will return an error if this is not the case.
