@@ -1,7 +1,6 @@
 package statsd
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/alexcesaro/statsd"
@@ -34,11 +33,11 @@ func (p *statsdPublisher) Publish(exp *experiment.Experiment, res experiment.Res
 
 func (p *statsdPublisher) publishObservation(ob experiment.Observation) {
 	p.cl.Timing(
-		p.bucketName(ob.Name()),
-		int(ob.Duration()/time.Millisecond),
+		p.bucketName(ob.Name),
+		int(ob.Duration/time.Millisecond),
 	)
 }
 
 func (p *statsdPublisher) bucketName(name string) string {
-	return fmt.Sprintf("%s.%s", p.exp.Name(), name)
+	return ""
 }

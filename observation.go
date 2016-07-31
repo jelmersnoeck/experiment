@@ -3,45 +3,38 @@ package experiment
 import "time"
 
 type (
-	// Observation is the result of a test being run.
-	Observation interface {
-		// Value is the value returned by the test or control function that gets
-		// executed.
-		Value() interface{}
-		// Error is the error that gets returned when executing the test or
-		// control function.
-		Error() error
-		// Panic is the panic that occured whilst running a test.
-		Panic() interface{}
-		Name() string
-		Duration() time.Duration
+	Observation struct {
+		Name     string
+		Value    interface{}
+		Error    error
+		Panic    interface{}
+		Duration time.Duration
 	}
 
-	experimentObservation struct {
-		name     string
-		value    interface{}
-		err      error
-		panic    interface{}
-		duration time.Duration
-	}
+	// Observations resembles a set of observations
+	Observations map[string]Observation
 )
 
-func (o *experimentObservation) Name() string {
-	return o.name
+// Control returns the control observation from a set of observations.
+func (o Observations) Control() Observation {
+	return o.Find(controlKey)
 }
 
-func (o *experimentObservation) Value() interface{} {
-	return o.value
+// Candidates returns all the observations except the control one.
+func (o Observations) Candidates() []Observation {
+	var os []Observation
+	for key, obs := range o {
+		if key == controlKey {
+			continue
+		}
+
+		os = append(os, obs)
+	}
+	return os
 }
 
-func (o *experimentObservation) Error() error {
-	return o.err
-}
-
-func (o *experimentObservation) Panic() interface{} {
-	return o.panic
-}
-
-func (o *experimentObservation) Duration() time.Duration {
-	return o.duration
+// Find returns an observation for the test with the given name. If there is no
+// such test, nil will be returned.
+func (o Observations) Find(name string) Observation {
+	return o[name]
 }

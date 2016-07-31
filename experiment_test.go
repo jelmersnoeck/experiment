@@ -6,123 +6,87 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestExperiment_Init(t *testing.T) {
-	Init(Percentage(100))
-
-	exp := New("experiment-test")
-	assert.Equal(t, float64(100), exp.opts.percentage)
-
-	// reset the default options. This could otherwise interfere with our tests
-	defaultOptions = []Option{}
-}
-
-func TestExperiment_New(t *testing.T) {
-	exp := New("experiment-test")
-
-	assert.Equal(t, "experiment-test", exp.Name(), "Experiment name from opts")
-}
-
 func TestExperiment_Control(t *testing.T) {
-	exp := New("control-test")
-	assert.Empty(t, exp.behaviours)
+	exp := newExperiment(DefaultConfig("test"))
+	require.Empty(t, exp.behaviours)
 
 	err := exp.Control(dummyControlFunc)
-	assert.NotEmpty(t, exp.behaviours)
-	assert.Nil(t, err)
+	require.NotEmpty(t, exp.behaviours)
+	require.Nil(t, err)
 
 	err = exp.Control(dummyControlFunc)
-	assert.NotNil(t, err)
-	assert.Len(t, exp.behaviours, 1)
+	require.NotNil(t, err)
+	require.Len(t, exp.behaviours, 1)
 }
 
 func TestExperiment_Test(t *testing.T) {
-	exp := New("control-test")
-	assert.Empty(t, exp.behaviours)
+	exp := newExperiment(DefaultConfig("test"))
+	require.Empty(t, exp.behaviours)
 
 	err := exp.Test("first", dummyTestFunc)
-	assert.Nil(t, err)
-	assert.Len(t, exp.behaviours, 1)
+	require.Nil(t, err)
+	require.Len(t, exp.behaviours, 1)
 
 	err = exp.Test("first", dummyTestFunc)
-	assert.NotNil(t, err)
-	assert.Len(t, exp.behaviours, 1)
+	require.NotNil(t, err)
+	require.Len(t, exp.behaviours, 1)
 
 	err = exp.Test("second", dummyTestFunc)
-	assert.Nil(t, err)
-	assert.Len(t, exp.behaviours, 2)
+	require.Nil(t, err)
+	require.Len(t, exp.behaviours, 2)
 }
 
 func TestExperiment_Run_NoControl(t *testing.T) {
-	exp := New("control-test")
+	exp := newExperiment(DefaultConfig("test"))
 	exp.Test("test-1", dummyTestFunc)
 
-	_, err := exp.Run(context.Background())
-	assert.IsType(t, err, ErrMissingControl)
-}
-
-func TestExperiment_Run_NoTest(t *testing.T) {
-	exp := New("control-test")
-	exp.Control(dummyControlFunc)
-
-	_, err := exp.Run(context.Background())
-	assert.IsType(t, err, ErrMissingTest)
+	_, err := exp.Run(nil)
+	require.IsType(t, err, ErrMissingControl)
 }
 
 func TestExperiment_Run(t *testing.T) {
-	exp := New("control-test")
-
-	exp.Control(dummyControlFunc)
-	exp.Test("test-1", dummyTestFunc)
-
-	obs, err := exp.Run(context.Background())
-
-	assert.Nil(t, err)
-	assert.Equal(t, obs.Value().(string), "control")
-}
-
-func TestExperiment_Run_WithTestPanic(t *testing.T) {
-	exp := New("control-test")
-
-	exp.Control(dummyControlFunc)
-	exp.Test("panic-test", dummyTestPanicFunc)
-
-	obs, err := exp.Run(context.Background())
-
-	assert.Nil(t, err)
-	assert.Equal(t, obs.Value().(string), "control")
-	assert.Len(t, exp.observations, 2)
-
-	panicObs := exp.observations["panic-test"]
-	assert.NotNil(t, panicObs.Panic)
-}
-
-func TestExperiment_Run_WithContext(t *testing.T) {
-	val := "my-context-test"
-	ctx := context.WithValue(context.Background(), "ctx-test", val)
-
-	exp := New("context-test")
-	exp.Control(dummyContextTestFunc)
-	exp.Test("context-test", dummyTestFunc)
-
-	obs, err := exp.Run(ctx)
-
-	assert.Nil(t, err)
-	assert.Equal(t, obs.Value().(string), val)
-}
-
-func TestExperiment_Run_Without_Context(t *testing.T) {
-	exp := New("control-test")
+	exp := newExperiment(DefaultConfig("test"))
 
 	exp.Control(dummyControlFunc)
 	exp.Test("test-1", dummyTestFunc)
 
 	obs, err := exp.Run(nil)
 
-	assert.Nil(t, err)
-	assert.Equal(t, obs.Value().(string), "control")
+	require.Nil(t, err)
+	require.NotNil(t, obs)
+	require.Equal(t, obs.Control().Value.(string), "control")
+}
+
+func TestExperiment_Run_WithTestPanic(t *testing.T) {
+	exp := newExperiment(DefaultConfig("test"))
+
+	exp.Control(dummyControlFunc)
+	exp.Test("panic-test", dummyTestPanicFunc)
+
+	obs, err := exp.Run(nil)
+
+	require.Nil(t, err)
+	require.Equal(t, obs.Control().Value.(string), "control")
+	require.Len(t, obs, 2)
+
+	panicObs := obs.Find("panic-test")
+	require.NotNil(t, panicObs.Panic)
+}
+
+func TestExperiment_Run_WithContext(t *testing.T) {
+	val := "my-context-test"
+	ctx := context.WithValue(context.Background(), "ctx-test", val)
+
+	exp := newExperiment(DefaultConfig("test"))
+	exp.Control(dummyContextTestFunc)
+
+	obs, err := exp.Run(ctx)
+
+	require.Nil(t, err)
+	require.Equal(t, obs.Control().Value.(string), val)
 }
 
 func TestExperiment_Run_Before(t *testing.T) {
@@ -132,14 +96,37 @@ func TestExperiment_Run_Before(t *testing.T) {
 	checkFunc := func(ctx context.Context) (interface{}, error) {
 		str := ctx.Value("my-key")
 
-		assert.Equal(t, "my-value", str)
+		require.Equal(t, "my-value", str)
 		return nil, nil
 	}
 
-	exp := New("before-test", Before(beforeFunc))
+	cfg := DefaultConfig("test")
+	cfg.AddBeforeFilter(beforeFunc)
+
+	exp := newExperiment(cfg)
 	exp.Control(checkFunc)
-	exp.Test("before-test", checkFunc)
+
 	exp.Run(context.Background())
+}
+
+func BenchmarkExperiment_Run(b *testing.B) {
+	exp := newExperiment(DefaultConfig("benchmark-test"))
+
+	exp.Control(dummyControlFunc)
+	exp.Test("first", dummyTestFunc)
+	exp.Test("second", dummyTestFunc)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			exp.Run(nil)
+		}
+	})
+}
+
+func newExperiment(cfg *Config) *Experiment {
+	return &Experiment{
+		Config: cfg,
+	}
 }
 
 func dummyContextTestFunc(ctx context.Context) (interface{}, error) {

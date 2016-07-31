@@ -16,7 +16,7 @@ we'll evaluate the time difference.
 
 ```go
 func main() {
-	exp := experiment.New("my-test")
+	exp := experiment.New(experiment.DefaultConfig("my-test"))
 
 	exp.Control(func(ctx context.Context) (interface{}, error) {
 		return "my-text", nil
@@ -35,7 +35,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	str = obs.Value().(string)
+
+	str = obs.Control().Value().(string)
 	fmt.Println(str)
 }
 ```

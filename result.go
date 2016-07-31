@@ -1,7 +1,5 @@
 package experiment
 
-import "fmt"
-
 type (
 	// Result represents the result from running all the observations and comparing
 	// them with the given compare method.
@@ -17,35 +15,21 @@ type (
 	}
 
 	experimentResult struct {
-		mismatches []Observation
-		candidates []Observation
-		control    Observation
-		experiment *Experiment
+		mismatches   []Observation
+		candidates   []Observation
+		observations Observations
+		cm           ComparisonMethod
+		hasRun       bool
 	}
 )
 
 // NewResult will take an experiment and go over all the observations to find
 // if the observation is a match or a mismatch.
-func NewResult(e *Experiment) Result {
-	rs := &experimentResult{
-		mismatches: []Observation{},
-		candidates: []Observation{},
-		experiment: e,
+func NewResult(obs Observations, cm ComparisonMethod) Result {
+	return &experimentResult{
+		observations: obs,
+		cm:           cm,
 	}
-
-	for _, o := range e.observations {
-		if o.Name() == "control" {
-			rs.control = o
-		} else {
-			rs.candidates = append(rs.candidates, o)
-		}
-	}
-
-	if rs.experiment.opts.comparison != nil {
-		rs.evaluate()
-	}
-
-	return rs
 }
 
 func (r *experimentResult) Mismatches() []Observation {
@@ -53,25 +37,13 @@ func (r *experimentResult) Mismatches() []Observation {
 }
 
 func (r *experimentResult) Candidates() []Observation {
-	return r.candidates
+	return r.observations.Candidates()
 }
 
 func (r *experimentResult) Control() Observation {
-	return r.control
+	return r.observations.Control()
 }
 
-// evaluate does the hard work of going through all the result Candidates and
-// calls the compare method given to the experiment with the Control and the
-// candidate value. If no comparison method is given in the options, evaluate
-// is skipped.
-func (r *experimentResult) evaluate() {
-	for _, c := range r.candidates {
-		if !r.experiment.opts.comparison(r.control, c) {
-			r.mismatches = append(r.mismatches, c)
-
-			if r.experiment.opts.testMode {
-				panic(fmt.Sprintf("Data mismatch in %v", c))
-			}
-		}
-	}
+func (r *experimentResult) Publish() error {
+	return nil
 }
