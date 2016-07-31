@@ -75,6 +75,39 @@ func (e *Experiment) Run(ctx context.Context) (Observations, error) {
 		return Observations{}, ErrMissingControl
 	}
 
+	defer func() {
+		e.Lock()
+		e.runs++
+		e.Unlock()
+	}()
+
 	runner := &experimentRunner{}
-	return runner.run(ctx, e.Config.BeforeFilters, e.behaviours), nil
+
+	if e.shouldRun() {
+		e.Lock()
+		e.hits++
+		e.Unlock()
+
+		return runner.run(ctx, e.Config.BeforeFilters, e.behaviours), nil
+	}
+
+	beh := map[string]*behaviour{
+		controlKey: e.behaviours[controlKey],
+	}
+	return runner.run(ctx, e.Config.BeforeFilters, beh), nil
+}
+
+func (e *Experiment) shouldRun() bool {
+	e.Lock()
+	defer e.Unlock()
+
+	if TestMode {
+		return true
+	}
+
+	if hitRate := (e.hits / e.runs) * 100.0; hitRate > e.Config.Percentage {
+		return false
+	}
+
+	return true
 }

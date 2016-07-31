@@ -112,6 +112,33 @@ func TestExperiment_Run_Before(t *testing.T) {
 	exp.Run(context.Background())
 }
 
+func TestExperiment_Run_Percentage(t *testing.T) {
+	cfg := Config{
+		Name:       "test",
+		Percentage: 50,
+	}
+
+	exp := newExperiment(cfg)
+	exp.Control(dummyControlFunc)
+	exp.Test("first", dummyTestFunc)
+
+	obs, err := exp.Run(nil)
+	require.Nil(t, err)
+	require.Len(t, obs, 2)
+
+	obs, err = exp.Run(nil)
+	require.Nil(t, err)
+	require.Len(t, obs, 1)
+
+	obs, err = exp.Run(nil)
+	require.Nil(t, err)
+	require.Len(t, obs, 2)
+
+	obs, err = exp.Run(nil)
+	require.Nil(t, err)
+	require.Len(t, obs, 1)
+}
+
 func BenchmarkExperiment_Run(b *testing.B) {
 	exp := newExperiment(DefaultConfig("benchmark-test"))
 
