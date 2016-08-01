@@ -14,6 +14,7 @@ type (
 		Percentage float32 `json:"percentage"`
 
 		BeforeFilters []BeforeFilter
+		Conditionals  []ConditionalFunc
 	}
 
 	// BeforeFilter is a wrapper around a method that is purely used to take a
@@ -24,6 +25,10 @@ type (
 	// want to compare the observations of a test. This being the Control and a
 	// random Test case.
 	ComparisonMethod func(Observation, Observation) bool
+
+	// ConditionalFunc is used to determine on run time whether or not we should
+	// run the tests.
+	ConditionalFunc func(context.Context) bool
 )
 
 // DefaultConfig sets up a default configuration where the Percentage is 100.

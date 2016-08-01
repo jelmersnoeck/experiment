@@ -75,17 +75,12 @@ func (e *Experiment) Run(ctx context.Context) (Observations, error) {
 		return Observations{}, ErrMissingControl
 	}
 
-	defer func() {
-		e.Lock()
-		e.runs++
-		e.Unlock()
-	}()
-
 	runner := &experimentRunner{}
 
-	if e.shouldRun() {
+	if e.shouldRun(ctx) {
 		e.Lock()
 		e.hits++
+		e.runs++
 		e.Unlock()
 
 		return runner.run(ctx, e.Config.BeforeFilters, e.behaviours), nil
@@ -94,6 +89,10 @@ func (e *Experiment) Run(ctx context.Context) (Observations, error) {
 	beh := map[string]*behaviour{
 		controlKey: e.behaviours[controlKey],
 	}
+
+	e.Lock()
+	e.runs++
+	e.Unlock()
 	return runner.run(ctx, e.Config.BeforeFilters, beh), nil
 }
 
@@ -103,12 +102,33 @@ func (e *Experiment) ForceRun(ctx context.Context) (Observations, error) {
 	}
 
 	runner := &experimentRunner{}
+	if !e.allowedRun(ctx) {
+		beh := map[string]*behaviour{
+			controlKey: e.behaviours[controlKey],
+		}
+		return runner.run(ctx, e.Config.BeforeFilters, beh), nil
+	}
+
 	return runner.run(ctx, e.Config.BeforeFilters, e.behaviours), nil
 }
 
-func (e *Experiment) shouldRun() bool {
+func (e *Experiment) allowedRun(ctx context.Context) bool {
+	for _, cd := range e.Config.Conditionals {
+		if !cd(ctx) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (e *Experiment) shouldRun(ctx context.Context) bool {
 	e.Lock()
 	defer e.Unlock()
+
+	if !e.allowedRun(ctx) {
+		return false
+	}
 
 	if TestMode {
 		return true
