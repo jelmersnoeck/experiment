@@ -153,6 +153,20 @@ func BenchmarkExperiment_Run(b *testing.B) {
 	})
 }
 
+func BenchmarkExperiment_ForceRun(b *testing.B) {
+	exp := newExperiment(DefaultConfig("benchmark-test"))
+
+	exp.Control(dummyControlFunc)
+	exp.Test("first", dummyTestFunc)
+	exp.Test("second", dummyTestFunc)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			exp.ForceRun(nil)
+		}
+	})
+}
+
 func newExperiment(cfg Config) *Experiment {
 	return &Experiment{
 		Config: cfg,

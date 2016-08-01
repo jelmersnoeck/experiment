@@ -91,6 +91,12 @@ control and potentially the tests.
 The control will be run no matter what. The tests might run depending on several
 options (see listed below).
 
+## ForceRun
+
+The `ForceRun()` method has the same implementation as the `Run()` method apart
+from the conditional run checks. This means that the tests will always run no
+matter what the other options are.
+
 ## Observation
 
 An Observation contains several attributes. The first one is the `Value`. This

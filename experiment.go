@@ -97,6 +97,15 @@ func (e *Experiment) Run(ctx context.Context) (Observations, error) {
 	return runner.run(ctx, e.Config.BeforeFilters, beh), nil
 }
 
+func (e *Experiment) ForceRun(ctx context.Context) (Observations, error) {
+	if _, ok := e.behaviours[controlKey]; !ok {
+		return Observations{}, ErrMissingControl
+	}
+
+	runner := &experimentRunner{}
+	return runner.run(ctx, e.Config.BeforeFilters, e.behaviours), nil
+}
+
 func (e *Experiment) shouldRun() bool {
 	e.Lock()
 	defer e.Unlock()
