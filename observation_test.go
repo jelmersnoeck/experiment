@@ -16,14 +16,14 @@ func TestObservation_Control(t *testing.T) {
 	require.Equal(t, "control", obs.Control().Name)
 }
 
-func TestObservation_Candidates(t *testing.T) {
+func TestObservation_Tests(t *testing.T) {
 	obs := experiment.Observations{
 		"control": experiment.Observation{Name: "control"},
 		"next":    experiment.Observation{Name: "next"},
 	}
 
-	require.Len(t, obs.Candidates(), 1)
-	require.Equal(t, "next", obs.Candidates()[0].Name)
+	require.Len(t, obs.Tests(), 1)
+	require.Equal(t, "next", obs.Tests()[0].Name)
 }
 
 func TestObservation_Find(t *testing.T) {

@@ -14,7 +14,6 @@ type (
 		Percentage float32 `json:"percentage"`
 
 		BeforeFilters []BeforeFilter
-		Comparison    ComparisonMethod
 	}
 
 	// BeforeFilter is a wrapper around a method that is purely used to take a

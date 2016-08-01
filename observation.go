@@ -21,7 +21,7 @@ func (o Observations) Control() Observation {
 }
 
 // Candidates returns all the observations except the control one.
-func (o Observations) Candidates() []Observation {
+func (o Observations) Tests() []Observation {
 	var os []Observation
 	for key, obs := range o {
 		if key == controlKey {

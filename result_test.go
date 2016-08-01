@@ -1,40 +1,37 @@
 package experiment_test
 
 import (
+	"testing"
+
 	"golang.org/x/net/context"
 
 	"github.com/jelmersnoeck/experiment"
+	"github.com/stretchr/testify/require"
 )
 
-//func TestNewResult_NoComparison(t *testing.T) {
-//exp := experiment.New("result-test")
-//runExperiment(exp)
+func TestNewResult_NoComparison(t *testing.T) {
+	res := experiment.NewResult(testObservations(), nil)
 
-//res := experiment.NewResult(exp)
-//assert.Len(t, res.Candidates(), 2)
-//assert.NotNil(t, res.Control())
-//assert.Empty(t, res.Mismatches())
-//}
+	require.Len(t, res.Candidates(), 2)
+	require.NotNil(t, res.Control())
+	require.Empty(t, res.Mismatches())
+}
 
-//func TestNewResult_WithComparison(t *testing.T) {
-//exp := experiment.New(
-//"result-test",
-//experiment.Compare(comparisonMethod),
-//)
-//runExperiment(exp)
+func TestNewResult_WithComparison(t *testing.T) {
+	res := experiment.NewResult(testObservations(), comparisonMethod)
 
-//res := experiment.NewResult(exp)
-//assert.Len(t, res.Candidates(), 2)
-//assert.NotNil(t, res.Control())
-//assert.Len(t, res.Mismatches(), 1)
-//}
+	require.Len(t, res.Candidates(), 1)
+	require.NotNil(t, res.Control())
+	require.Len(t, res.Mismatches(), 1)
+}
 
-//func runExperiment(exp *experiment.Experiment) {
-//exp.Control(dummyControlFunc)
-//exp.Test("test1", dummyTestFunc)
-//exp.Test("test2", dummyCompareTestFunc)
-//exp.Run(context.Background())
-//}
+func testObservations() experiment.Observations {
+	return experiment.Observations{
+		"control": experiment.Observation{Value: "correct-test"},
+		"test1":   experiment.Observation{Value: "incorrect"},
+		"test2":   experiment.Observation{Value: "correct-test"},
+	}
+}
 
 func dummyTestFunc(ctx context.Context) (interface{}, error) {
 	return "test", nil

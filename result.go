@@ -23,8 +23,8 @@ type (
 	}
 )
 
-// NewResult will take an experiment and go over all the observations to find
-// if the observation is a match or a mismatch.
+// NewResult takes an Observations type and will compare every test observation
+// in it with the control observation through the given ComparisonMethod.
 func NewResult(obs Observations, cm ComparisonMethod) Result {
 	return &experimentResult{
 		observations: obs,
@@ -33,17 +33,39 @@ func NewResult(obs Observations, cm ComparisonMethod) Result {
 }
 
 func (r *experimentResult) Mismatches() []Observation {
+	r.ensureRun()
+
 	return r.mismatches
 }
 
 func (r *experimentResult) Candidates() []Observation {
-	return r.observations.Candidates()
+	r.ensureRun()
+
+	return r.candidates
 }
 
 func (r *experimentResult) Control() Observation {
 	return r.observations.Control()
 }
 
-func (r *experimentResult) Publish() error {
-	return nil
+func (r *experimentResult) ensureRun() {
+	if r.hasRun {
+		return
+	}
+	defer func() { r.hasRun = true }()
+
+	if r.cm == nil {
+		r.candidates = r.observations.Tests()
+		return
+	}
+
+	ctrl := r.observations.Control()
+	for _, obs := range r.observations.Tests() {
+		if r.cm(ctrl, obs) {
+			r.candidates = append(r.candidates, obs)
+		} else {
+			r.mismatches = append(r.mismatches, obs)
+		}
+	}
+
 }
