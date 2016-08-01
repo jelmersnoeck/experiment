@@ -1,6 +1,7 @@
 package statsd
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/alexcesaro/statsd"
@@ -8,23 +9,22 @@ import (
 )
 
 type statsdPublisher struct {
-	cl  *statsd.Client
-	exp *experiment.Experiment
+	pf string
+	cl *statsd.Client
 }
 
 // New creates a new ResultPublisher that will publish results to a statsd
 // client.
-func New(opts ...statsd.Option) (experiment.ResultPublisher, error) {
+func New(prefix string, opts ...statsd.Option) (experiment.ResultPublisher, error) {
 	cl, err := statsd.New(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &statsdPublisher{cl: cl}, nil
+	return &statsdPublisher{pf: prefix, cl: cl}, nil
 }
 
-func (p *statsdPublisher) Publish(exp *experiment.Experiment, res experiment.Result) {
-	p.exp = exp
+func (p *statsdPublisher) Publish(res experiment.Result) {
 	p.publishObservation(res.Control())
 	for _, ob := range res.Candidates() {
 		p.publishObservation(ob)
@@ -39,5 +39,5 @@ func (p *statsdPublisher) publishObservation(ob experiment.Observation) {
 }
 
 func (p *statsdPublisher) bucketName(name string) string {
-	return ""
+	return fmt.Sprintf("%s.%s", p.pf, name)
 }
