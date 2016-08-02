@@ -32,18 +32,27 @@ func NewResult(obs Observations, cm ComparisonMethod) Result {
 	}
 }
 
+// Mismatches returns all the observations for the tests that do not evaluate
+// to true with the given ComparisonMethod.
+// Note that this could potentially be an expensive method to run. It is advised
+// to look at these results in a goroutine.
 func (r *experimentResult) Mismatches() []Observation {
 	r.ensureRun()
 
 	return r.mismatches
 }
 
+// Candidates returns all the observations for the tests that evaluate to true
+// with the given ComparisonMethod.
+// Note that this could potentially be an expensive method to run. It is advised
+// to look at these results in a goroutine.
 func (r *experimentResult) Candidates() []Observation {
 	r.ensureRun()
 
 	return r.candidates
 }
 
+// Control returns the observation for the control test.
 func (r *experimentResult) Control() Observation {
 	return r.observations.Control()
 }

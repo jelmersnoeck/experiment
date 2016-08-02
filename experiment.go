@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-
-	"golang.org/x/net/context"
 )
 
 const (
@@ -39,7 +37,8 @@ var (
 	ErrRunExperiment = errors.New("Experiment has not run yet, call `Run()` first.")
 )
 
-// New will create a new experiment with the given config.
+// New will create a new experiment with the given config. Experiments are safe
+// for concurrent usage.
 func New(cfg Config) *Experiment {
 	return &Experiment{Config: cfg}
 }
@@ -68,75 +67,35 @@ func (e *Experiment) Test(name string, b BehaviourFunc) error {
 	return nil
 }
 
-// Run will go through all the tests in a random order and run them one by one.
-// The Result that is returned contains the Control and Candidate behaviours.
-func (e *Experiment) Run(ctx context.Context) (Observations, error) {
+// Runner will return a new Runenr instance which can be used to run the actual
+// experiment. A runner is not safe for concurrent usage, but this method is.
+// At the point of calling this method, we will copy the hitrate, which means
+// that any actual experiment runs (from other runners) that happen between
+// requesting a new runner and actually running the test will not influence it's
+// state.
+func (e *Experiment) Runner() (Runner, error) {
 	if _, ok := e.behaviours[controlKey]; !ok {
-		return Observations{}, ErrMissingControl
+		return nil, ErrMissingControl
 	}
 
-	runner := &experimentRunner{}
+	return &experimentRunner{
+		experiment: e,
+		config:     e.Config,
+		behaviours: e.behaviours,
+		testMode:   TestMode,
+		hits:       e.hits,
+		runs:       e.runs,
+	}, nil
+}
 
-	if e.shouldRun(ctx) {
-		e.Lock()
-		e.hits++
-		e.runs++
-		e.Unlock()
+func (e *Experiment) hit() {
+	e.Lock()
+	e.hits++
+	e.Unlock()
+}
 
-		return runner.run(ctx, e.Config.BeforeFilters, e.behaviours), nil
-	}
-
-	beh := map[string]*behaviour{
-		controlKey: e.behaviours[controlKey],
-	}
-
+func (e *Experiment) run() {
 	e.Lock()
 	e.runs++
 	e.Unlock()
-	return runner.run(ctx, e.Config.BeforeFilters, beh), nil
-}
-
-func (e *Experiment) ForceRun(ctx context.Context) (Observations, error) {
-	if _, ok := e.behaviours[controlKey]; !ok {
-		return Observations{}, ErrMissingControl
-	}
-
-	runner := &experimentRunner{}
-	if !e.allowedRun(ctx) {
-		beh := map[string]*behaviour{
-			controlKey: e.behaviours[controlKey],
-		}
-		return runner.run(ctx, e.Config.BeforeFilters, beh), nil
-	}
-
-	return runner.run(ctx, e.Config.BeforeFilters, e.behaviours), nil
-}
-
-func (e *Experiment) allowedRun(ctx context.Context) bool {
-	for _, cd := range e.Config.Conditionals {
-		if !cd(ctx) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (e *Experiment) shouldRun(ctx context.Context) bool {
-	e.Lock()
-	defer e.Unlock()
-
-	if !e.allowedRun(ctx) {
-		return false
-	}
-
-	if TestMode {
-		return true
-	}
-
-	if hitRate := (e.hits / e.runs) * 100.0; hitRate > e.Config.Percentage {
-		return false
-	}
-
-	return true
 }

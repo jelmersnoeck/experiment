@@ -1,31 +1,79 @@
 package experiment
 
 import (
-	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 )
 
-type experimentRunner struct {
-	sync.Mutex
+// Runner represents the implementation that actually runs the tests. Runners
+// are not safe for concurrent use. Each concurrent request should request
+// a new runner from the experiment.
+type Runner interface {
+	// Run will run the tests with a given context.
+	Run(context.Context) Observations
+	// Disable forces the runner to not run the tests. This overrules the
+	// `Force()` method.
+	Disable(bool)
+	// Force forces the runner to run the tests no matter what the hitrate is or
+	// what other options are given.
+	Force(bool)
 }
 
-// observe is the actual runner that goes through a list of behaviours and
-// executes them. It will do so in a random order.
-//
-// For safety purpose, all functions that are not the control are run in a
-// goroutine with a recover function. This way, when a panic would occur in one
-// of the tests, the user would not notice. However, if a panic happens in the
-// control, it will actually be triggered. This happens after we collect all
-// the data.
-func (r *experimentRunner) run(ctx context.Context, filters []BeforeFilter, behaviours map[string]*behaviour) Observations {
-	for _, f := range filters {
+type experimentRunner struct {
+	experiment *Experiment
+	behaviours map[string]*behaviour
+
+	config Config
+
+	testMode bool
+	disabled bool
+	force    bool
+
+	hits float32
+	runs float32
+}
+
+func (r *experimentRunner) Disable(d bool) {
+	r.disabled = d
+}
+
+func (r *experimentRunner) Force(f bool) {
+	r.force = f
+}
+
+func (r *experimentRunner) Run(ctx context.Context) Observations {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	for _, f := range r.config.BeforeFilters {
 		ctx = f(ctx)
 	}
 
-	obsch := make(chan *Observation, len(behaviours))
+	var behaviours map[string]*behaviour
 
+	if r.disabled {
+		// only run the control, we don't want to run the tests
+		behaviours = map[string]*behaviour{
+			controlKey: r.behaviours[controlKey],
+		}
+	} else if r.force {
+		// we don't want to count a force run towards our percentage
+		behaviours = r.behaviours
+	} else {
+		r.experiment.run()
+		if r.shouldRun() {
+			r.experiment.hit()
+			behaviours = r.behaviours
+		} else {
+			behaviours = map[string]*behaviour{
+				controlKey: r.behaviours[controlKey],
+			}
+		}
+	}
+
+	obsch := make(chan *Observation, len(behaviours))
 	for _, beh := range behaviours {
 		go r.observe(ctx, beh, obsch, TestMode)
 	}
@@ -39,6 +87,22 @@ func (r *experimentRunner) run(ctx context.Context, filters []BeforeFilter, beha
 	}
 
 	return obs
+}
+
+func (r *experimentRunner) shouldRun() bool {
+	if r.testMode {
+		return true
+	}
+
+	if r.runs == 0 {
+		return true
+	}
+
+	if hitRate := (r.hits / r.runs) * 100; hitRate <= r.config.Percentage {
+		return true
+	}
+
+	return false
 }
 
 func (r *experimentRunner) observe(ctx context.Context, beh *behaviour, obsch chan *Observation, tm bool) {

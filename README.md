@@ -15,8 +15,26 @@ using a string with the notation of `""` compares to using a byte buffer and
 we'll evaluate the time difference.
 
 ```go
+var (
+    myExperiment = newExperiment()
+)
+
 func main() {
-	exp := experiment.New(experiment.DefaultConfig("my-test"))
+	runner, err := myExperiment.Runner()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+    obs := runner.Run(nil)
+	str = obs.Control().Value.(string)
+	fmt.Println(str)
+}
+
+func newExperiment() *experiment.Experiment
+	exp := experiment.New(
+        experiment.DefaultConfig("my-test"),
+    )
 
 	exp.Control(func(ctx context.Context) (interface{}, error) {
 		return "my-text", nil
@@ -30,21 +48,14 @@ func main() {
 		return string(buf.Bytes()), nil
 	})
 
-	obs, err := exp.Run(nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	str = obs.Control().Value.(string)
-	fmt.Println(str)
-}
+    return exp
+)
 ```
 
 First, we create an experiment with a new name. This will identify the
 experiment later on in our publishers.
 
-Further down, we set a control function. This is basically the functionality you
+We then add a control function to the experiment. This is the functionality you
 are currently using in your codebase and want to evaluate against. The `Control`
 method is of the same structure as the `Test` method, in which it takes a
 `context.Context` to pass along any data and expects an interface and error as
@@ -52,22 +63,21 @@ return value.
 
 The next step is to define tests. These tests are to see if the newly refactored
 code performs better and yields the same output. The sampling rate for these
-tests can be configured as mentioned later on in the options section.
+tests can be configured as mentioned later on in the config section.
+
+Once he setup is complete, it is time to run our experiment. To do so, we
+request a runner from the experiment. We can then use some extra options
+(discussed in the `Runner` section) and run the experiment.
+
+The `Runner` will return an `Observations` type, which is a set of observations.
+This includes our control observation - which can be accessed via `Control()` -
+and our test observations.
 
 Once the setup is complete, it is time to run our experiment. This will run our
 control and tests(if applicable) in a random fashion. This means that one time
 the control could be run first, another time the test case could be run first.
 This is done so to avoid any accidental behavioural changes in any of the
 control or test code.
-
-The `Run()` method also returns an `Observations` type. This is a set of
-observations which includes the control observation. This can be accessed by
-calling the `Control()` method on the `Observations`. It also contains the
-observations for all the other test cases if run.
-
-If an error happens trying to run the experiment, this will be returned. If an
-error happens when running a test, this will be available on the `Observation`
-by accessing the `Error()` method.
 
 ## Limitations
 
@@ -77,25 +87,28 @@ Due to the fact that it is not guaranteed that a test will run every time or in
 what order a test will run, it is suggested that experiments only do stateless
 changes.
 
-### Multiple tests
+Tests also run concurrently next to each other, so it is important to keep this
+in mind that your data should be concurrently accessible.
 
-Although it is possible to add multiple test cases to a single experiment, it is
-not suggested to do so. The test are run synchroniously which means this can add
-up to your response time.
+## Runner
 
-## Run
+After creating an experiment, we can request a runner from it. The runner is
+resonsible for actually running the tests. Unlike an Experiment, a runner is
+not safe for concurrent usage and should be created for each concurrent request.
 
-The `Run()` method executes the experiment. This means that it will run the
-control and potentially the tests.
+### Disable
 
-The control will be run no matter what. The tests might run depending on several
-options (see listed below).
+The `Disable(bool)` method is in place for checks when you might not want to run
+an experiment at any cost. This overrules the `Force(bool)` method as well.
 
-## ForceRun
+### Force
 
-The `ForceRun()` method has the same implementation as the `Run()` method apart
-from the conditional run checks. This means that the tests will always run no
-matter what the other options are.
+`Force(bool)` allows you to force run an experiment and overrules all other
+options, apart from the `Disable(bool)` method.
+
+### Run
+
+`Run(context.Context)` will run the experiment and return a set of observations.
 
 ## Observation
 
@@ -103,7 +116,14 @@ An Observation contains several attributes. The first one is the `Value`. This
 is the value which is returned by the control function that is specified. There
 is also an `Error` attribute available, which contains the error returned.
 
-## Panics
+## Errors
+
+### Regular errors
+
+When a `BehaviourFunc` returns an error, this error will be attached to the
+`Observation` under the `Error` value.
+
+### Panics
 
 When the control panics, this panic will be respected and actually be triggered.
 When a test function panics, the experiment will swallow this and add the panic
@@ -113,49 +133,6 @@ to the `Panic` attribute on the `Observation`.
 
 When creating a new experiment, one can add several options. Some of them have
 default values.
-
-### Comparison
-
-By default, the duration and return values will be captured. If you want to
-conclude the experiment by comparing results, a `Compare` option can be given
-when creating a new experiment. Mismatches will then be recorded in the `Result`
-which can be used to be published.
-
-If no `Compare` option is given, no mismatches will be recorded, only durations.
-
-```go
-func main() {
-    cfg := experiment.Config{
-        Name: "comparison",
-        Percentage: 10,
-        Comparison: comparisonMethod,
-    }
-	exp := experiment.New(cfg)
-
-	// add control/tests
-
-	obs, err := exp.Run(nil)
-    if err != nil {
-        fmt.Println(err)
-        return
-    }
-
-    res := experiment.NewResult(obs, cfg)
-    fmt.Println(res.Mismatches())
-}
-
-func comparisonMethod(control experiment.Observation, test experiment.Observation) bool {
-	c := control.Value().(string)
-	t := test.Value().(string)
-
-	return c == t
-}
-```
-
-With a `Compare` option set, the result generator (called by `Result()`) will go
-over all observations and call this comparison method with both the control
-observation and the test case observation. It will then store all mismatched
-separately in the `Mismatches()` method on the `Result` object.
 
 ### Percentage
 
@@ -231,6 +208,30 @@ other options - the setup will be executed. If not, the setup won't be touched.
 
 It is common practice to put shared values from the setup in the context which
 can then be used later in the test and control cases.
+
+## Results
+
+Tests results can be obtained by creating a new Results handler.
+
+```go
+func main () {
+    // set up experiment and runner
+    obs := runner.Run(nil)
+
+    res := experiment.NewResult(obs, comparisonMethod)
+
+    fmt.Println(res.Control()) // prints the control observation
+    fmt.Println(res.Candidates()) // prints the observations that passes the comparison method check
+    fmt.Println(res.Mismatches()) // prints the mismatches
+}
+
+func comparisonMethod(ctrl Observation, test Observation) bool {
+    // do comparison logic here
+}
+```
+
+It is important to note that this could be an expensive method to run. It is
+advised to run this in a goroutine.
 
 ## Testing
 
