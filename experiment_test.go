@@ -61,6 +61,19 @@ func TestExperiment_Run(t *testing.T) {
 	require.Equal(t, obs.Control().Value.(string), "control")
 }
 
+func TestExperiment_Runner_ControlFailure(t *testing.T) {
+	exp := newExperiment(DefaultConfig("benchmark-test"))
+
+	exp.Control(dummyTestErrorFunc)
+
+	runner, err := exp.Runner()
+	require.Nil(t, err)
+
+	obs := runner.Run(nil)
+
+	require.NotNil(t, obs.Control().Error)
+}
+
 func TestExperiment_Run_WithTestPanic(t *testing.T) {
 	exp := newExperiment(DefaultConfig("test"))
 
