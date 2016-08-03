@@ -18,6 +18,7 @@ type Runner interface {
 	// Force forces the runner to run the tests no matter what the hitrate is or
 	// what other options are given.
 	Force(bool)
+	HasRun() bool
 }
 
 type experimentRunner struct {
@@ -29,6 +30,7 @@ type experimentRunner struct {
 	testMode bool
 	disabled bool
 	force    bool
+	hasRun   bool
 
 	hits float32
 	runs float32
@@ -40,6 +42,10 @@ func (r *experimentRunner) Disable(d bool) {
 
 func (r *experimentRunner) Force(f bool) {
 	r.force = f
+}
+
+func (r *experimentRunner) HasRun() bool {
+	return r.hasRun
 }
 
 func (r *experimentRunner) Run(ctx context.Context) Observations {
@@ -65,6 +71,7 @@ func (r *experimentRunner) Run(ctx context.Context) Observations {
 		r.experiment.run()
 		if r.shouldRun() {
 			r.experiment.hit()
+			r.hasRun = true
 			behaviours = r.behaviours
 		} else {
 			behaviours = map[string]*behaviour{
