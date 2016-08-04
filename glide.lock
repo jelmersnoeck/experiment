@@ -1,10 +1,8 @@
-hash: f4d8d67c945ee5f5aa0b69755519f2046776ae90ade6d8765263c39803cd7009
-updated: 2016-08-03T12:11:01.311820077+01:00
+hash: b294ad791fec6055b08aae661ef034c0f30e4a05681d9fb291dd86825dc69fef
+updated: 2016-08-04T09:22:58.406894768+01:00
 imports:
-- name: github.com/alexcesaro/statsd
-  version: 7fea3f0d2fab1ad973e641e51dba45443a311a90
 - name: golang.org/x/net
-  version: e2ba55e4e78399d85f2a0e0b92396b81ed410633
+  version: 57bfaa875b96fb91b4766077f34470528d4b03e9
   subpackages:
   - context
 testImports:
