@@ -253,7 +253,7 @@ import (
 )
 
 func init() {
-	experiment.Init(experiment.TestMode())
+    experiment.TestMode = true
 }
 
 // wherever you use an experiment, it will now panic on mismatch, panic when
