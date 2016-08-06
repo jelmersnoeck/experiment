@@ -15,8 +15,26 @@ using a string with the notation of `""` compares to using a byte buffer and
 we'll evaluate the time difference.
 
 ```go
+var (
+    myExperiment = newExperiment()
+)
+
 func main() {
-	exp := experiment.New("my-test")
+	runner, err := myExperiment.Runner()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+    obs := runner.Run(nil)
+	str = obs.Control().Value.(string)
+	fmt.Println(str)
+}
+
+func newExperiment() *experiment.Experiment
+	exp := experiment.New(
+        experiment.DefaultConfig("my-test"),
+    )
 
 	exp.Control(func(ctx context.Context) (interface{}, error) {
 		return "my-text", nil
@@ -30,20 +48,14 @@ func main() {
 		return string(buf.Bytes()), nil
 	})
 
-	obs, err := exp.Run(nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	str = obs.Value().(string)
-	fmt.Println(str)
-}
+    return exp
+)
 ```
 
 First, we create an experiment with a new name. This will identify the
 experiment later on in our publishers.
 
-Further down, we set a control function. This is basically the functionality you
+We then add a control function to the experiment. This is the functionality you
 are currently using in your codebase and want to evaluate against. The `Control`
 method is of the same structure as the `Test` method, in which it takes a
 `context.Context` to pass along any data and expects an interface and error as
@@ -51,20 +63,21 @@ return value.
 
 The next step is to define tests. These tests are to see if the newly refactored
 code performs better and yields the same output. The sampling rate for these
-tests can be configured as mentioned later on in the options section.
+tests can be configured as mentioned later on in the config section.
+
+Once he setup is complete, it is time to run our experiment. To do so, we
+request a runner from the experiment. We can then use some extra options
+(discussed in the `Runner` section) and run the experiment.
+
+The `Runner` will return an `Observations` type, which is a set of observations.
+This includes our control observation - which can be accessed via `Control()` -
+and our test observations.
 
 Once the setup is complete, it is time to run our experiment. This will run our
 control and tests(if applicable) in a random fashion. This means that one time
 the control could be run first, another time the test case could be run first.
 This is done so to avoid any accidental behavioural changes in any of the
 control or test code.
-
-The run method also returns an observation, which contains the return value and
-error from the control method. If something went wrong trying to run the
-experiment, this will also return the error it encountered. The control code
-is always executed as is in comparison to the test code. If an error happens
-within the test code which causes an exception, this will be swallowed and added
-to the observation.
 
 ## Limitations
 
@@ -74,77 +87,52 @@ Due to the fact that it is not guaranteed that a test will run every time or in
 what order a test will run, it is suggested that experiments only do stateless
 changes.
 
-### Multiple tests
+Tests also run concurrently next to each other, so it is important to keep this
+in mind that your data should be concurrently accessible.
 
-Although it is possible to add multiple test cases to a single experiment, it is
-not suggested to do so. The test are run synchroniously which means this can add
-up to your response time.
+## Runner
 
-## Run
+After creating an experiment, we can request a runner from it. The runner is
+resonsible for actually running the tests. Unlike an Experiment, a runner is
+not safe for concurrent usage and should be created for each concurrent request.
 
-The `Run()` method for an experiment executes the experiment. This means that it
-will run the control and potentially the tests.
+### Disable
 
-The control will be run no matter what. The tests might run depending on several
-options (see listed below).
+The `Disable(bool)` method is in place for checks when you might not want to run
+an experiment at any cost. This overrules the `Force(bool)` method as well.
 
-The `Run()` method will return an Observation and an error. When an error is
-returned, it means that the control couldn't be run for some reason.
+### Force
 
-The Observation contains several methods. The first one is the `Value()`. This
+`Force(bool)` allows you to force run an experiment and overrules all other
+options, apart from the `Disable(bool)` method.
+
+### Run
+
+`Run(context.Context)` will run the experiment and return a set of observations.
+
+## Observation
+
+An Observation contains several attributes. The first one is the `Value`. This
 is the value which is returned by the control function that is specified. There
-is also an `Error()` method available, which contains the error returned.
+is also an `Error` attribute available, which contains the error returned.
 
-The `Run()` method takes a `context.Context` type, which could be nil.
+## Errors
 
-## Options
+### Regular errors
+
+When a `BehaviourFunc` returns an error, this error will be attached to the
+`Observation` under the `Error` value.
+
+### Panics
+
+When the control panics, this panic will be respected and actually be triggered.
+When a test function panics, the experiment will swallow this and add the panic
+to the `Panic` attribute on the `Observation`.
+
+## Config
 
 When creating a new experiment, one can add several options. Some of them have
 default values.
-
-- Comparison (nil)
-- Percentage (10)
-- Enabled (true)
-- Before (nil)
-- Publisher (nil)
-- Testing (false)
-
-### Comparison
-
-By default, the duration and return values will be captured. If you want to
-conclude the experiment by comparing results, a `Compare` option can be given
-when creating a new experiment. Mismatches will then be recorded in the `Result`
-which can be used to be published.
-
-If no `Compare` option is given, no mismatches will be recorded, only durations.
-
-```go
-func main() {
-	exp := experiment.New(
-		"my-experiment",
-		experiment.Compare(comparisonMethod),
-	)
-
-	// add control/tests
-
-	exp.Run(nil)
-
-	result := exp.Result()
-	fmt.Println(result.Mismatches)
-}
-
-func comparisonMethod(control experiment.Observation, test experiment.Observation) bool {
-	c := control.Value().(string)
-	t := test.Value().(string)
-
-	return c == t
-}
-```
-
-With a `Compare` option set, the result generator (called by `Result()`) will go
-over all observations and call this comparison method with both the control
-observation and the test case observation. It will then store all mismatched
-separately in the `Mismatches()` method on the `Result` object.
 
 ### Percentage
 
@@ -157,10 +145,11 @@ disables the test cases to be run.
 
 ```go
 func main() {
-	exp := experiment.New(
-		"my-experiment",
-		experiment.Percentage(25),
-	)
+    cfg := experiment.Config{
+        Name: "percentage",
+        Percentage: 25,
+    }
+	exp := experiment.New(cfg)
 
 	// add control/tests
 
@@ -170,39 +159,13 @@ func main() {
 		return
 	}
 
-	str = obs.Value().(string)
+	str = obs.Control().Value.(string)
 	fmt.Println(str)
 }
 ```
 
 Now that we've set the percentage to 25, the experiment will only be run 1/4
 times. This is good for sampling data and rolling it out sequentially.
-
-### Enabled
-
-While refactoring code, it might be possible that a certain code path is not
-available yet. To accomplish this, there is an `Enabled(bool)` option available.
-
-```go
-func main() {
-	// do set up
-
-	u := User.Get(5)
-
-	exp := experiment.New(
-		"my-test",
-		experiment.Enabled(shouldRunExperiment(u)),
-	)
-
-	// run the experiment
-}
-
-func shouldRunExperiment(user User) bool {
-	return user.IsConfirmed()
-}
-```
-
-In this case, if the user is not confirmed yet, we will not run the experiment.
 
 ### Before
 
@@ -215,10 +178,12 @@ To do this, we make use of context.
 
 ```go
 func main() {
-	exp := experiment.New(
-		"context-example",
-		experiment.Before(mySetup),
-	)
+    cfg := experiment.Config{
+        Name: "percentage",
+        Percentage: 25,
+        BeforeFilters: []BeforeFilter{mySetup},
+    }
+	exp := experiment.New(cfg)
 
 	// do more experiment setup and run it
 }
@@ -244,65 +209,29 @@ other options - the setup will be executed. If not, the setup won't be touched.
 It is common practice to put shared values from the setup in the context which
 can then be used later in the test and control cases.
 
-### Publisher
+## Results
 
-Once the experiment has run, it is useful to see the results. To do so, there
-is a `ResultPublisher` interface available. This has one method,
-`Publish(Result)` which will take care of publishing the result to the chosen
-output.
-
-Multiple publishers can be configured for a single experiment. For example, one
-could use a statsd publisher to pubish duration metrics to statsd and a Redis
-publisher to store the differences between the control and test results.
+Tests results can be obtained by creating a new Results handler.
 
 ```go
-func main() {
-	exp := experiment.New(
-		"context-example",
-		experiment.Publisher(statsdPublisher{}),
-		experiment.Publisher(redisPublisher{}),
-	)
+func main () {
+    // set up experiment and runner
+    obs := runner.Run(nil)
 
-	// more experiment setup and run
+    res := experiment.NewResult(obs, comparisonMethod)
 
-	// this will publish the results to `myPublisher` and `redisPublisher`.
-	exp.Publish()
+    fmt.Println(res.Control()) // prints the control observation
+    fmt.Println(res.Candidates()) // prints the observations that passes the comparison method check
+    fmt.Println(res.Mismatches()) // prints the mismatches
+}
+
+func comparisonMethod(ctrl Observation, test Observation) bool {
+    // do comparison logic here
 }
 ```
 
-Here we register two publishers. The statsd publisher will most likely publish
-the durations of the result, making them available for graphs. The Redis
-publisher can be used to store the mismatches that need investigating later on.
-
-## Context
-
-When using a context for your request, you might have information that you need
-within your test. By passing in a context to the `Run()` method, you can pass
-through this information.
-
-```go
-func main() {
-	ctx := context.WithValue(context.Background(), "key", "value")
-
-	exp := experiment.New(
-		"context-example",
-	)
-	exp.Control(myControlFunc)
-
-    exp.Run(ctx)
-}
-
-func myControlFunc(ctx context.Context) (interface{}, error) {
-	key := ctx.Value("key")
-
-	return key, nil
-}
-```
-
-In the above example, we create a new context and pass it along to our runner.
-The experiment runner is aware of this and passes that to any function that
-takes a `context.Context` type (our test and control cases). This makes it then
-available for these functions to use.
+It is important to note that this could be an expensive method to run. It is
+advised to run this in a goroutine.
 
 ## Testing
 
