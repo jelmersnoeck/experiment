@@ -134,6 +134,10 @@ func testFunc(ctx context.Context) (interface{}, error) {
 }
 ```
 
+### Performance
+
+Although all the experiments run at the same time (with goroutines), it could be that new tests introduce a performance degradation. New tests should be rolled out slowly and monitored closely. Using the `Config` `Percentage` option is a good first step for this.
+
 ## Runner
 
 After creating an experiment, we can request a runner from it. The runner is
