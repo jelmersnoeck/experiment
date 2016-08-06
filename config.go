@@ -10,9 +10,7 @@ type (
 	// Config is the configuration used to set up an experiment. Config is not
 	// safe for concurrent use.
 	Config struct {
-		Name       string  `json:"name"`
-		Percentage float32 `json:"percentage"`
-
+		Percentage    float32 `json:"percentage"`
 		BeforeFilters []BeforeFilter
 	}
 
@@ -31,9 +29,8 @@ type (
 )
 
 // DefaultConfig sets up a default configuration where the Percentage is 100.
-func DefaultConfig(name string) Config {
+func DefaultConfig() Config {
 	return Config{
-		Name:       name,
 		Percentage: 100,
 	}
 }

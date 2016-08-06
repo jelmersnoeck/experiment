@@ -10,7 +10,7 @@ import (
 )
 
 func TestExperiment_Control(t *testing.T) {
-	exp := newExperiment(DefaultConfig("test"))
+	exp := newExperiment(DefaultConfig())
 	require.Empty(t, exp.behaviours)
 
 	err := exp.Control(dummyControlFunc)
@@ -23,7 +23,7 @@ func TestExperiment_Control(t *testing.T) {
 }
 
 func TestExperiment_Test(t *testing.T) {
-	exp := newExperiment(DefaultConfig("test"))
+	exp := newExperiment(DefaultConfig())
 	require.Empty(t, exp.behaviours)
 
 	err := exp.Test("first", dummyTestFunc)
@@ -40,7 +40,7 @@ func TestExperiment_Test(t *testing.T) {
 }
 
 func TestExperiment_Run_NoControl(t *testing.T) {
-	exp := newExperiment(DefaultConfig("test"))
+	exp := newExperiment(DefaultConfig())
 	exp.Test("test-1", dummyTestFunc)
 
 	_, err := exp.Runner()
@@ -48,7 +48,7 @@ func TestExperiment_Run_NoControl(t *testing.T) {
 }
 
 func TestExperiment_Run(t *testing.T) {
-	exp := newExperiment(DefaultConfig("test"))
+	exp := newExperiment(DefaultConfig())
 
 	exp.Control(dummyControlFunc)
 	exp.Test("test-1", dummyTestFunc)
@@ -62,7 +62,7 @@ func TestExperiment_Run(t *testing.T) {
 }
 
 func TestExperiment_Runner_ControlFailure(t *testing.T) {
-	exp := newExperiment(DefaultConfig("benchmark-test"))
+	exp := newExperiment(DefaultConfig())
 
 	exp.Control(dummyTestErrorFunc)
 
@@ -75,7 +75,7 @@ func TestExperiment_Runner_ControlFailure(t *testing.T) {
 }
 
 func TestExperiment_Run_WithTestPanic(t *testing.T) {
-	exp := newExperiment(DefaultConfig("test"))
+	exp := newExperiment(DefaultConfig())
 
 	exp.Control(dummyControlFunc)
 	exp.Test("panic-test", dummyTestPanicFunc)
@@ -96,7 +96,7 @@ func TestExperiment_Run_WithContext(t *testing.T) {
 	val := "my-context-test"
 	ctx := context.WithValue(context.Background(), "ctx-test", val)
 
-	exp := newExperiment(DefaultConfig("test"))
+	exp := newExperiment(DefaultConfig())
 	exp.Control(dummyContextTestFunc)
 
 	runner, err := exp.Runner()
@@ -118,7 +118,6 @@ func TestExperiment_Run_Before(t *testing.T) {
 	}
 
 	cfg := Config{
-		Name:          "test",
 		Percentage:    100,
 		BeforeFilters: []BeforeFilter{beforeFunc},
 	}
@@ -134,7 +133,6 @@ func TestExperiment_Run_Before(t *testing.T) {
 
 func TestExperiment_Run_Percentage(t *testing.T) {
 	cfg := Config{
-		Name:       "test",
 		Percentage: 50,
 	}
 
@@ -164,7 +162,7 @@ func TestExperiment_Run_Percentage(t *testing.T) {
 }
 
 func BenchmarkExperiment_Run(b *testing.B) {
-	exp := newExperiment(DefaultConfig("benchmark-test"))
+	exp := newExperiment(DefaultConfig())
 
 	exp.Control(dummyControlFunc)
 	exp.Test("first", dummyTestFunc)

@@ -33,7 +33,7 @@ func main() {
 
 func newExperiment() *experiment.Experiment
 	exp := experiment.New(
-        experiment.DefaultConfig("my-test"),
+        experiment.DefaultConfig(),
     )
 
 	exp.Control(func(ctx context.Context) (interface{}, error) {
@@ -190,7 +190,6 @@ disables the test cases to be run.
 ```go
 func main() {
     cfg := experiment.Config{
-        Name: "percentage",
         Percentage: 25,
     }
 	exp := experiment.New(cfg)
@@ -223,7 +222,6 @@ To do this, we make use of context.
 ```go
 func main() {
     cfg := experiment.Config{
-        Name: "percentage",
         Percentage: 25,
         BeforeFilters: []BeforeFilter{mySetup},
     }
