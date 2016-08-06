@@ -277,6 +277,36 @@ func comparisonMethod(ctrl Observation, test Observation) bool {
 It is important to note that this could be an expensive method to run. It is
 advised to run this in a goroutine.
 
+## Publisher
+
+The publisher is what makes the experiment useful. It allows you to see how an
+experiment performs and what the impact is.
+
+The publisher depends on 3 methods:
+
+- `Increment(string)` for incrementing error and panic counts
+- `Count(string, interface{})` for counting candidates and mismatches
+- `Timing(string, interface{})` for measuring run durations
+
+### Keys
+
+Error and panic counts are captured with the keys `<test-name>.panics.incr` and
+`<test-name>.errors.incr`.
+
+Candidates and mismatches are captured with the keys `candidates.count` and
+`mismatches.count`.
+
+Timings are captured with the key `<test-name>.time`.
+
+
+*Note:* The control function has the `<test-name>` `control`.
+
+### Concurrent access
+
+The publisher is safe for concurrent usage and should be used in such way. This
+means that one should create only one publisher (for example with a statsd
+client) and reuse this publisher across all requests.
+
 ## Testing
 
 When you're testing you're application, it is important to see all the issues.
