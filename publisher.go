@@ -3,7 +3,7 @@ package experiment
 import "time"
 
 type (
-	// ResultPublisher is what we'll use to make our results visible. Multiple
+	// Publisher is what we'll use to make our results visible. Multiple
 	// publishers can be used for a single experiment with each having their own
 	// purpose.
 	Publisher interface {
@@ -23,8 +23,8 @@ type (
 	}
 )
 
-// New creates a new ResultPublisher that will publish results to a publisher
-// client.
+// NewPublisher creates a new ResultPublisher that will publish results to a
+// publisher client.
 func NewPublisher(client PublisherClient) Publisher {
 	return &publisher{cl: client}
 }

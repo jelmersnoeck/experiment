@@ -3,6 +3,10 @@ package experiment
 import "golang.org/x/net/context"
 
 var (
+	// TestMode indicates if the code is executed as part of the test suite.
+	// When TestMode is enabled, all the experiment tests will always run,
+	// regardless of any other settings. Any potential panics that are caused
+	// in any of the tests will also not be recovered but actually panic.
 	TestMode = false
 )
 

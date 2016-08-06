@@ -27,14 +27,6 @@ var (
 	// ErrMissingControl is returned when there is no control function set for the
 	// experiment
 	ErrMissingControl = errors.New("No control function was given.")
-	// ErrNoControlObservation is returned in the case when there is something
-	// wrong with running the control.
-	ErrNoControlObservation = errors.New("The control did not finish properly.")
-	// No Observations
-	ErrNoObservations = errors.New("No observations could be generated")
-	// ErrRunExperiment is returned when the experiment is required to have run
-	// but has not run yet.
-	ErrRunExperiment = errors.New("Experiment has not run yet, call `Run()` first.")
 )
 
 // New will create a new experiment with the given config. Experiments are safe

@@ -3,6 +3,8 @@ package experiment
 import "time"
 
 type (
+	// Observation is the result of running a test. It contains the information
+	// that is obtained by calling one of the test functions.
 	Observation struct {
 		// Name is the name of the associated test for this observation.
 		Name string
@@ -30,7 +32,7 @@ func (o Observations) Control() Observation {
 	return o.Find(controlKey)
 }
 
-// Candidates returns all the observations except the control one.
+// Tests returns all the observations except the control one.
 func (o Observations) Tests() []Observation {
 	var os []Observation
 	for key, obs := range o {
