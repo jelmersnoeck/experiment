@@ -79,7 +79,7 @@ the control could be run first, another time the test case could be run first.
 This is done so to avoid any accidental behavioural changes in any of the
 control or test code.
 
-## Limitations
+## Limitations and caveats
 
 ### Stateless
 
@@ -89,6 +89,50 @@ changes.
 
 Tests also run concurrently next to each other, so it is important to keep this
 in mind that your data should be concurrently accessible.
+
+### Concurrent access to context
+
+When annotating the context which is passed to the runner, one should think
+about the implications of what changing this data would mean. A general rule is
+to only *read* data from `context.Context` and not change it.
+
+Below is an example that demonstrates missbehaviour:
+
+```go
+type Test struct {
+    Value string
+}
+
+func main() {
+    // setup
+    exp.Control(controlFunc)
+    exp.Test("test", testFunc)
+
+    run, _ := exp.Runner()
+
+    value := &Test{"Foo"}
+    ctx := context.WithValue(context.Background(), "key", value)
+    runner.Run(value)
+}
+
+func controlFunc(ctx context.Context) (interface{}, error) {
+    test := context.Value(ctx, "key").(*Test)
+
+    // The below value could either be "Foo" or "Bar" due to changing the `key`
+    // value, which is a pointer (the context points to the same reference in
+    // both the controlFunc and testFunc).
+    fmt.Println(test.Value)
+
+    return test, nil
+}
+
+func testFunc(ctx context.Context) (interface{}, error) {
+    test := context.Value(ctx, "key").(*Test)
+    test.Value = "Bar"
+
+    return test, nil
+}
+```
 
 ## Runner
 
