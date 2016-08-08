@@ -30,7 +30,7 @@ func TestPublisher_Publish_ErroredControl(t *testing.T) {
 	}
 
 	pub.Publish(experiment.NewResult(obs, nil))
-	require.Equal(t, 1, p.increments)
+	require.Equal(t, 2, p.increments)
 	require.Equal(t, 2, p.counts)
 	require.Equal(t, 1, p.timers)
 }
@@ -57,7 +57,7 @@ func TestPublisher_Publish_ErroredTests(t *testing.T) {
 	}
 
 	pub.Publish(experiment.NewResult(obs, nil))
-	require.Equal(t, 2, p.increments)
+	require.Equal(t, 3, p.increments)
 	require.Equal(t, 2, p.counts)
 	require.Equal(t, 2, p.timers)
 }
