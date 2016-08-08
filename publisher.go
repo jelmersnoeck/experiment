@@ -35,6 +35,7 @@ func (p *publisher) Publish(res Result) {
 		p.publishObservation(ob)
 	}
 
+	p.cl.Increment("publish.incr")
 	p.cl.Count("candidates.count", len(res.Candidates()))
 	p.cl.Count("mismatches.count", len(res.Mismatches()))
 }
