@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	"github.com/jelmersnoeck/experiment"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDefaultConfig(t *testing.T) {
 	df := experiment.DefaultConfig()
-	require.EqualValues(t, 100, df.Percentage)
+
+	if val, pct := float32(100), df.Percentage; val != pct {
+		t.Fatalf("Expected percentage to be `%f`, got `%f`", val, pct)
+	}
 }

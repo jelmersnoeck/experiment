@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/jelmersnoeck/experiment"
-	"github.com/stretchr/testify/require"
 )
 
 func TestObservation_Control(t *testing.T) {
@@ -13,7 +12,10 @@ func TestObservation_Control(t *testing.T) {
 		"next":    experiment.Observation{Name: "next"},
 	}
 
-	require.Equal(t, "control", obs.Control().Name)
+	if exp, val := "control", obs.Control().Name; exp != val {
+		t.Fatalf("Expected control name to be `%s`, got `%s`", exp, val)
+	}
+
 }
 
 func TestObservation_Tests(t *testing.T) {
@@ -22,8 +24,12 @@ func TestObservation_Tests(t *testing.T) {
 		"next":    experiment.Observation{Name: "next"},
 	}
 
-	require.Len(t, obs.Tests(), 1)
-	require.Equal(t, "next", obs.Tests()[0].Name)
+	if exp, len := 1, len(obs.Tests()); exp != len {
+		t.Fatalf("Expectes tests length to be `%d`, got `%d`", exp, len)
+	}
+	if exp, val := "next", obs.Tests()[0].Name; exp != val {
+		t.Fatalf("Expected test name to be `%s`, got `%s`", exp, val)
+	}
 }
 
 func TestObservation_Find(t *testing.T) {
@@ -32,6 +38,10 @@ func TestObservation_Find(t *testing.T) {
 		"next":    experiment.Observation{Name: "next"},
 	}
 
-	require.Equal(t, "next", obs.Find("next").Name)
-	require.Equal(t, "control", obs.Find("control").Name)
+	if exp, val := "next", obs.Find("next").Name; exp != val {
+		t.Fatalf("Expected observation name to be `%s`, got `%s`", exp, val)
+	}
+	if exp, val := "control", obs.Find("control").Name; exp != val {
+		t.Fatalf("Expected obserfvation name to be `%s`, got `%s`", exp, val)
+	}
 }

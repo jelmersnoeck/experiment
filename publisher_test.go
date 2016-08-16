@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jelmersnoeck/experiment"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPublisher_Publish_PassedControl(t *testing.T) {
@@ -18,8 +17,12 @@ func TestPublisher_Publish_PassedControl(t *testing.T) {
 	}
 
 	pub.Publish(experiment.NewResult(obs, nil))
-	require.Equal(t, 2, p.counts)
-	require.Equal(t, 1, p.timers)
+	if exp, val := 2, p.counts; exp != val {
+		t.Fatalf("Expected counts to be `%d`, got `%d`", exp, val)
+	}
+	if exp, val := 1, p.timers; exp != val {
+		t.Fatalf("Expected timers to be `%d`, got `%d`", exp, val)
+	}
 }
 
 func TestPublisher_Publish_ErroredControl(t *testing.T) {
@@ -30,9 +33,15 @@ func TestPublisher_Publish_ErroredControl(t *testing.T) {
 	}
 
 	pub.Publish(experiment.NewResult(obs, nil))
-	require.Equal(t, 2, p.increments)
-	require.Equal(t, 2, p.counts)
-	require.Equal(t, 1, p.timers)
+	if exp, val := 2, p.increments; exp != val {
+		t.Fatalf("Expected increments to be `%d`, got `%d`", exp, val)
+	}
+	if exp, val := 2, p.counts; exp != val {
+		t.Fatalf("Expected counts to be `%d`, got `%d`", exp, val)
+	}
+	if exp, val := 1, p.timers; exp != val {
+		t.Fatalf("Expected timers to be `%d`, got `%d`", exp, val)
+	}
 }
 
 func TestPublisher_Publish_PassedTests(t *testing.T) {
@@ -44,8 +53,12 @@ func TestPublisher_Publish_PassedTests(t *testing.T) {
 	}
 
 	pub.Publish(experiment.NewResult(obs, nil))
-	require.Equal(t, 2, p.counts)
-	require.Equal(t, 2, p.timers)
+	if exp, val := 2, p.counts; exp != val {
+		t.Fatalf("Expected counts to be `%d`, got `%d`", exp, val)
+	}
+	if exp, val := 2, p.timers; exp != val {
+		t.Fatalf("Expected timers to be `%d`, got `%d`", exp, val)
+	}
 }
 
 func TestPublisher_Publish_ErroredTests(t *testing.T) {
@@ -57,9 +70,15 @@ func TestPublisher_Publish_ErroredTests(t *testing.T) {
 	}
 
 	pub.Publish(experiment.NewResult(obs, nil))
-	require.Equal(t, 3, p.increments)
-	require.Equal(t, 2, p.counts)
-	require.Equal(t, 2, p.timers)
+	if exp, val := 3, p.increments; exp != val {
+		t.Fatalf("Expected increments to be `%d`, got `%d`", exp, val)
+	}
+	if exp, val := 2, p.counts; exp != val {
+		t.Fatalf("Expected counts to be `%d`, got `%d`", exp, val)
+	}
+	if exp, val := 2, p.timers; exp != val {
+		t.Fatalf("Expected timers to be `%d`, got `%d`", exp, val)
+	}
 }
 
 func BenchmarkPublisher_Publish(b *testing.B) {

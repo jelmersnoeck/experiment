@@ -3,7 +3,3 @@ import:
 - package: golang.org/x/net
   subpackages:
   - context
-testImport:
-- package: github.com/stretchr/testify
-  subpackages:
-  - require

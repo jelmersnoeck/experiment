@@ -1,6 +1,6 @@
 language: go
 before_script:
-  - go get -u golang.org/x/net/context github.com/stretchr/testify/assert
+  - go get -u golang.org/x/net/context
 script: go test -race -v -bench=. -run=. ./...
 os:
   - linux
@@ -8,4 +8,5 @@ os:
 go:
     - 1.5
     - 1.6
+    - 1.7
     - tip

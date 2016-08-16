@@ -5,38 +5,60 @@ import (
 	"testing"
 
 	"golang.org/x/net/context"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestExperiment_Control(t *testing.T) {
 	exp := newExperiment(DefaultConfig())
-	require.Empty(t, exp.behaviours)
+	if len(exp.behaviours) != 0 {
+		t.Fatalf("Expected behaviours to be empty, got `%d`", len(exp.behaviours))
+	}
 
 	err := exp.Control(dummyControlFunc)
-	require.NotEmpty(t, exp.behaviours)
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
+	if len(exp.behaviours) == 0 {
+		t.Fatalf("Expected behaviours not to be empty")
+	}
 
 	err = exp.Control(dummyControlFunc)
-	require.NotNil(t, err)
-	require.Len(t, exp.behaviours, 1)
+	if err == nil {
+		t.Fatalf("Expected error not to be nil")
+	}
+	if exp, len := 1, len(exp.behaviours); exp != len {
+		t.Fatalf("Expected `%d` behaviours, got `%d`", exp, len)
+	}
 }
 
 func TestExperiment_Test(t *testing.T) {
 	exp := newExperiment(DefaultConfig())
-	require.Empty(t, exp.behaviours)
+	if len(exp.behaviours) != 0 {
+		t.Fatalf("Expected behaviours to be empty, got `%d`", len(exp.behaviours))
+	}
 
 	err := exp.Test("first", dummyTestFunc)
-	require.Nil(t, err)
-	require.Len(t, exp.behaviours, 1)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
+	if exp, len := 1, len(exp.behaviours); exp != len {
+		t.Fatalf("Expected `%d` behaviours, got `%d`", exp, len)
+	}
 
 	err = exp.Test("first", dummyTestFunc)
-	require.NotNil(t, err)
-	require.Len(t, exp.behaviours, 1)
+	if err == nil {
+		t.Fatalf("Expected error not to be nil")
+	}
+	if exp, len := 1, len(exp.behaviours); exp != len {
+		t.Fatalf("Expected `%d` behaviours, got `%d`", exp, len)
+	}
 
 	err = exp.Test("second", dummyTestFunc)
-	require.Nil(t, err)
-	require.Len(t, exp.behaviours, 2)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
+	if exp, len := 2, len(exp.behaviours); exp != len {
+		t.Fatalf("Expected `%d` behaviours, got `%d`", exp, len)
+	}
 }
 
 func TestExperiment_Run_NoControl(t *testing.T) {
@@ -44,7 +66,9 @@ func TestExperiment_Run_NoControl(t *testing.T) {
 	exp.Test("test-1", dummyTestFunc)
 
 	_, err := exp.Runner()
-	require.IsType(t, err, ErrMissingControl)
+	if err != ErrMissingControl {
+		t.Fatalf("Expected error to be of type `ErrMissingControl`, got %T", err)
+	}
 }
 
 func TestExperiment_Run(t *testing.T) {
@@ -54,24 +78,32 @@ func TestExperiment_Run(t *testing.T) {
 	exp.Test("test-1", dummyTestFunc)
 
 	runner, err := exp.Runner()
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
 
 	obs := runner.Run(nil)
-	require.NotNil(t, obs)
-	require.Equal(t, obs.Control().Value.(string), "control")
+	if obs == nil {
+		t.Fatalf("Expected observation not to be nil")
+	}
+	if exp, val := "control", obs.Control().Value.(string); exp != val {
+		t.Fatalf("Expected control value to equal `%s`, got `%s`", exp, val)
+	}
 }
 
 func TestExperiment_Runner_ControlFailure(t *testing.T) {
 	exp := newExperiment(DefaultConfig())
-
 	exp.Control(dummyTestErrorFunc)
 
 	runner, err := exp.Runner()
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
 
 	obs := runner.Run(nil)
-
-	require.NotNil(t, obs.Control().Error)
+	if obs.Control().Error == nil {
+		t.Fatalf("Expected control error not to be nil")
+	}
 }
 
 func TestExperiment_Run_WithTestPanic(t *testing.T) {
@@ -81,15 +113,23 @@ func TestExperiment_Run_WithTestPanic(t *testing.T) {
 	exp.Test("panic-test", dummyTestPanicFunc)
 
 	runner, err := exp.Runner()
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
 
 	runner.Force(true)
 	obs := runner.Run(nil)
-	require.Equal(t, obs.Control().Value.(string), "control")
-	require.Len(t, obs, 2)
+	if exp, val := "control", obs.Control().Value.(string); exp != val {
+		t.Fatalf("Expected control value to equal `%s`, got `%s`", exp, val)
+	}
+	if exp, val := 2, len(obs); exp != val {
+		t.Fatalf("Expected `%d` observations, got `%d`", exp, val)
+	}
 
 	panicObs := obs.Find("panic-test")
-	require.NotNil(t, panicObs.Panic)
+	if panicObs.Panic == nil {
+		t.Fatalf("Expected Panic not to be nil")
+	}
 }
 
 func TestExperiment_Run_WithContext(t *testing.T) {
@@ -100,10 +140,14 @@ func TestExperiment_Run_WithContext(t *testing.T) {
 	exp.Control(dummyContextTestFunc)
 
 	runner, err := exp.Runner()
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
 
 	obs := runner.Run(ctx)
-	require.Equal(t, obs.Control().Value.(string), val)
+	if exp, val := "my-context-test", obs.Control().Value.(string); exp != val {
+		t.Fatalf("Expected control value to equal `%s`, got `%s`", exp, val)
+	}
 }
 
 func TestExperiment_Run_Before(t *testing.T) {
@@ -111,9 +155,9 @@ func TestExperiment_Run_Before(t *testing.T) {
 		return context.WithValue(ctx, "my-key", "my-value")
 	}
 	checkFunc := func(ctx context.Context) (interface{}, error) {
-		str := ctx.Value("my-key")
-
-		require.Equal(t, "my-value", str)
+		if exp, val := "my-value", ctx.Value("my-key").(string); exp != val {
+			t.Fatalf("Expected context string to be `%s`, got `%s`", exp, val)
+		}
 		return nil, nil
 	}
 
@@ -126,7 +170,9 @@ func TestExperiment_Run_Before(t *testing.T) {
 	exp.Control(checkFunc)
 
 	runner, err := exp.Runner()
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
 
 	runner.Run(nil)
 }
@@ -141,24 +187,40 @@ func TestExperiment_Run_Percentage(t *testing.T) {
 	exp.Test("first", dummyTestFunc)
 
 	runner, err := exp.Runner()
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
 	obs := runner.Run(nil)
-	require.Len(t, obs, 2)
+	if exp, len := 2, len(obs); exp != len {
+		t.Fatalf("Expected `%d` observations, got `%d`", exp, len)
+	}
 
 	runner, err = exp.Runner()
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
 	obs = runner.Run(nil)
-	require.Len(t, obs, 1)
+	if exp, len := 1, len(obs); exp != len {
+		t.Fatalf("Expected `%d` observations, got `%d`", exp, len)
+	}
 
 	runner, err = exp.Runner()
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
 	obs = runner.Run(nil)
-	require.Len(t, obs, 2)
+	if exp, len := 2, len(obs); exp != len {
+		t.Fatalf("Expected `%d` observations, got `%d`", exp, len)
+	}
 
 	runner, err = exp.Runner()
-	require.Nil(t, err)
+	if err != nil {
+		t.Fatalf("Expected error to be nil, got `%s`", err)
+	}
 	obs = runner.Run(nil)
-	require.Len(t, obs, 1)
+	if exp, len := 1, len(obs); exp != len {
+		t.Fatalf("Expected `%d` observations, got `%d`", exp, len)
+	}
 }
 
 func BenchmarkExperiment_Run(b *testing.B) {
