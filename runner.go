@@ -1,9 +1,8 @@
 package experiment
 
 import (
+	"context"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // Runner represents the implementation that actually runs the tests. Runners

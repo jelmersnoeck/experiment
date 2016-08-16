@@ -1,6 +1,4 @@
 language: go
-before_script:
-  - go get -u golang.org/x/net/context
 script: go test -race -v -bench=. -run=. ./...
 os:
   - linux

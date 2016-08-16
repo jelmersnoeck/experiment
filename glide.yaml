@@ -1,5 +1,0 @@
-package: github.com/jelmersnoeck/experiment
-import:
-- package: golang.org/x/net
-  subpackages:
-  - context

@@ -1,6 +1,6 @@
 package experiment
 
-import "golang.org/x/net/context"
+import "context"
 
 type (
 	behaviour struct {
