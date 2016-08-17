@@ -6,23 +6,30 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/jelmersnoeck/experiment"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewResult_NoComparison(t *testing.T) {
 	res := experiment.NewResult(testObservations(), nil)
 
-	require.Len(t, res.Candidates(), 2)
-	require.NotNil(t, res.Control())
-	require.Empty(t, res.Mismatches())
+	if len, can := 2, len(res.Candidates()); len != can {
+		t.Fatalf("Expected `%d` candidates, got `%d`", len, can)
+	}
+
+	if len(res.Mismatches()) != 0 {
+		t.Fatalf("Expected `Mismatches()` to be empty")
+	}
 }
 
 func TestNewResult_WithComparison(t *testing.T) {
 	res := experiment.NewResult(testObservations(), comparisonMethod)
 
-	require.Len(t, res.Candidates(), 1)
-	require.NotNil(t, res.Control())
-	require.Len(t, res.Mismatches(), 1)
+	if len, can := 1, len(res.Candidates()); len != can {
+		t.Fatalf("Expected `%d` candidates, got `%d`", len, can)
+	}
+
+	if len, can := 1, len(res.Mismatches()); len != can {
+		t.Fatalf("Expected `%d` mismatches, got `%d`", len, can)
+	}
 }
 
 func testObservations() experiment.Observations {
