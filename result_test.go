@@ -1,9 +1,8 @@
 package experiment_test
 
 import (
+	"context"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"github.com/jelmersnoeck/experiment"
 )

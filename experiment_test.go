@@ -1,10 +1,9 @@
 package experiment
 
 import (
+	"context"
 	"errors"
 	"testing"
-
-	"golang.org/x/net/context"
 )
 
 func TestExperiment_Control(t *testing.T) {

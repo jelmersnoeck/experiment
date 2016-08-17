@@ -1,6 +1,6 @@
 package experiment
 
-import "golang.org/x/net/context"
+import "context"
 
 var (
 	// TestMode indicates if the code is executed as part of the test suite.
