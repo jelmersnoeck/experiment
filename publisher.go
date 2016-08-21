@@ -28,7 +28,7 @@ func NewPublisher(client PublisherClient) *Publisher {
 // This will publish the number of candidates, mismatches and a hit counter.
 // Per observation - including the control - it will also publish the error
 // count, panic count and observation duration.
-func (p *Publisher) Publish(res Result) {
+func (p *Publisher) Publish(res *Result) {
 	p.publishObservation(res.Control())
 	for _, ob := range res.Candidates() {
 		p.publishObservation(ob)
