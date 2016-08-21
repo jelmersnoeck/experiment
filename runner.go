@@ -9,19 +9,7 @@ import (
 // Runner represents the implementation that actually runs the tests. Runners
 // are not safe for concurrent use. Each concurrent request should request
 // a new runner from the experiment.
-type Runner interface {
-	// Run will run the tests with a given context.
-	Run(context.Context) Observations
-	// Disable forces the runner to not run the tests. This overrules the
-	// `Force()` method.
-	Disable(bool)
-	// Force forces the runner to run the tests no matter what the hitrate is or
-	// what other options are given.
-	Force(bool)
-	HasRun() bool
-}
-
-type experimentRunner struct {
+type Runner struct {
 	experiment *Experiment
 	behaviours map[string]*behaviour
 
@@ -36,19 +24,25 @@ type experimentRunner struct {
 	runs float32
 }
 
-func (r *experimentRunner) Disable(d bool) {
+// Disable forces the runner to not run the tests. This overrules the `Force()`
+// method.
+func (r *Runner) Disable(d bool) {
 	r.disabled = d
 }
 
-func (r *experimentRunner) Force(f bool) {
+// Force forces the runner to run the tests no matter what the hitrate is or
+// what other options are given.
+func (r *Runner) Force(f bool) {
 	r.force = f
 }
 
-func (r *experimentRunner) HasRun() bool {
+// HasRun returns wether or not the test has actually been executed.
+func (r *Runner) HasRun() bool {
 	return r.hasRun
 }
 
-func (r *experimentRunner) Run(ctx context.Context) Observations {
+// Run will run the tests with a given context.
+func (r *Runner) Run(ctx context.Context) Observations {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -96,7 +90,7 @@ func (r *experimentRunner) Run(ctx context.Context) Observations {
 	return obs
 }
 
-func (r *experimentRunner) shouldRun() bool {
+func (r *Runner) shouldRun() bool {
 	if r.testMode {
 		return true
 	}
@@ -112,7 +106,7 @@ func (r *experimentRunner) shouldRun() bool {
 	return false
 }
 
-func (r *experimentRunner) observe(ctx context.Context, beh *behaviour, obsch chan *Observation, tm bool) {
+func (r *Runner) observe(ctx context.Context, beh *behaviour, obsch chan *Observation, tm bool) {
 	obs := &Observation{Name: beh.name}
 
 	defer func() {
