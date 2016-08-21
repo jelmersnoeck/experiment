@@ -1,3 +1,4 @@
+// Package experiment provides tools to test and evaluate refactored code paths.
 package experiment
 
 import (
