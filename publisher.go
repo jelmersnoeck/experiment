@@ -3,13 +3,6 @@ package experiment
 import "time"
 
 type (
-	// Publisher is what we'll use to make our results visible. Multiple
-	// publishers can be used for a single experiment with each having their own
-	// purpose.
-	Publisher interface {
-		Publish(Result)
-	}
-
 	// PublisherClient takes care of actually sending data to a collector to
 	// visualise your data. This could be a statsd or graphite client for example.
 	PublisherClient interface {
@@ -18,18 +11,24 @@ type (
 		Timing(string, interface{})
 	}
 
-	publisher struct {
+	// Publisher is what we'll use to make our results visible. Multiple
+	// Publishers can be used for a single experiment with each having their own
+	// purpose.
+	Publisher struct {
 		cl PublisherClient
 	}
 )
 
-// NewPublisher creates a new ResultPublisher that will publish results to a
-// publisher client.
-func NewPublisher(client PublisherClient) Publisher {
-	return &publisher{cl: client}
+// NewPublisher creates a new publisher that will publish results to a client.
+func NewPublisher(client PublisherClient) *Publisher {
+	return &Publisher{cl: client}
 }
 
-func (p *publisher) Publish(res Result) {
+// Publish takes a resultset and sends it off to the client in the publisher.
+// This will publish the number of candidates, mismatches and a hit counter.
+// Per observation - including the control - it will also publish the error
+// count, panic count and observation duration.
+func (p *Publisher) Publish(res Result) {
 	p.publishObservation(res.Control())
 	for _, ob := range res.Candidates() {
 		p.publishObservation(ob)
@@ -40,7 +39,7 @@ func (p *publisher) Publish(res Result) {
 	p.cl.Count("mismatches.count", len(res.Mismatches()))
 }
 
-func (p *publisher) publishObservation(ob Observation) {
+func (p *Publisher) publishObservation(ob Observation) {
 	if ob.Error != nil {
 		p.cl.Increment(ob.Name + ".errors.incr")
 	}
