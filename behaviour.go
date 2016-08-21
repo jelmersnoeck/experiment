@@ -1,7 +1,5 @@
 package experiment
 
-import "golang.org/x/net/context"
-
 type (
 	behaviour struct {
 		name string
@@ -13,7 +11,7 @@ type (
 	// key/value pairs and we expect it to return an interface and error. When
 	// the function is linked to a control behaviour, the returned interface and
 	// error will be used to be returned when the experiment is run.
-	BehaviourFunc func(context.Context) (interface{}, error)
+	BehaviourFunc func(Context) (interface{}, error)
 )
 
 func newBehaviour(name string, fnc BehaviourFunc) *behaviour {

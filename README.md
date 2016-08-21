@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-    obs := runner.Run(nil)
+    obs := runner.Run(context.TODO())
 	str = obs.Control().Value.(string)
 	fmt.Println(str)
 }
@@ -78,6 +78,16 @@ control and tests(if applicable) in a random fashion. This means that one time
 the control could be run first, another time the test case could be run first.
 This is done so to avoid any accidental behavioural changes in any of the
 control or test code.
+
+## Context
+
+[Context](https://godoc.org/context) has been added to Go in version 1.7. For backwards compatibility,
+the Context interface has been copied to this library instead of relying on the
+Go 1.7 internal interface or the older `/x/net/context` interface.
+
+Note: when using a Context, one should always use an actual implementation of a
+context and not use `nil`. If the implementation isn't decided yet, use
+`context.TODO()`.
 
 ## Limitations and caveats
 
@@ -200,7 +210,7 @@ func main() {
 
 	// add control/tests
 
-	obs, err := exp.Run(nil)
+	obs, err := exp.Run(context.TODO())
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -262,7 +272,7 @@ Tests results can be obtained by creating a new Results handler.
 ```go
 func main () {
     // set up experiment and runner
-    obs := runner.Run(nil)
+    obs := runner.Run(context.TODO())
 
     res := experiment.NewResult(obs, comparisonMethod)
 

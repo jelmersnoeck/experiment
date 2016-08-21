@@ -151,10 +151,10 @@ func TestExperiment_Run_WithContext(t *testing.T) {
 }
 
 func TestExperiment_Run_Before(t *testing.T) {
-	beforeFunc := func(ctx context.Context) context.Context {
+	beforeFunc := func(ctx Context) Context {
 		return context.WithValue(ctx, "my-key", "my-value")
 	}
-	checkFunc := func(ctx context.Context) (interface{}, error) {
+	checkFunc := func(ctx Context) (interface{}, error) {
 		if exp, val := "my-value", ctx.Value("my-key").(string); exp != val {
 			t.Fatalf("Expected context string to be `%s`, got `%s`", exp, val)
 		}
@@ -246,23 +246,23 @@ func newExperiment(cfg Config) *Experiment {
 	}
 }
 
-func dummyContextTestFunc(ctx context.Context) (interface{}, error) {
+func dummyContextTestFunc(ctx Context) (interface{}, error) {
 	return ctx.Value("ctx-test"), nil
 }
 
-func dummyTestFunc(ctx context.Context) (interface{}, error) {
+func dummyTestFunc(ctx Context) (interface{}, error) {
 	return "test", nil
 }
 
-func dummyControlFunc(ctx context.Context) (interface{}, error) {
+func dummyControlFunc(ctx Context) (interface{}, error) {
 	return "control", nil
 }
 
-func dummyTestErrorFunc(ctx context.Context) (interface{}, error) {
+func dummyTestErrorFunc(ctx Context) (interface{}, error) {
 	return "test", errors.New("error")
 }
 
-func dummyTestPanicFunc(ctx context.Context) (interface{}, error) {
+func dummyTestPanicFunc(ctx Context) (interface{}, error) {
 	panic("test")
 	return "panic", nil
 }

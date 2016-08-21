@@ -1,10 +1,6 @@
 package experiment
 
-import (
-	"time"
-
-	"golang.org/x/net/context"
-)
+import "time"
 
 // Runner represents the implementation that actually runs the tests. Runners
 // are not safe for concurrent use. Each concurrent request should request
@@ -42,11 +38,7 @@ func (r *Runner) HasRun() bool {
 }
 
 // Run will run the tests with a given context.
-func (r *Runner) Run(ctx context.Context) Observations {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
+func (r *Runner) Run(ctx Context) Observations {
 	for _, f := range r.config.BeforeFilters {
 		ctx = f(ctx)
 	}
@@ -106,7 +98,7 @@ func (r *Runner) shouldRun() bool {
 	return false
 }
 
-func (r *Runner) observe(ctx context.Context, beh *behaviour, obsch chan *Observation, tm bool) {
+func (r *Runner) observe(ctx Context, beh *behaviour, obsch chan *Observation, tm bool) {
 	obs := &Observation{Name: beh.name}
 
 	defer func() {
@@ -126,7 +118,7 @@ func (r *Runner) observe(ctx context.Context, beh *behaviour, obsch chan *Observ
 	runObservation(ctx, beh, obs)
 }
 
-func runObservation(ctx context.Context, b *behaviour, obs *Observation) {
+func runObservation(ctx Context, b *behaviour, obs *Observation) {
 	defer func(start time.Time) {
 		obs.Duration = time.Now().Sub(start)
 	}(time.Now())
