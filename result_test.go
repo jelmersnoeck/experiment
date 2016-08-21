@@ -3,8 +3,6 @@ package experiment_test
 import (
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"github.com/jelmersnoeck/experiment"
 )
 
@@ -40,15 +38,15 @@ func testObservations() experiment.Observations {
 	}
 }
 
-func dummyTestFunc(ctx context.Context) (interface{}, error) {
+func dummyTestFunc(ctx experiment.Context) (interface{}, error) {
 	return "test", nil
 }
 
-func dummyCompareTestFunc(ctx context.Context) (interface{}, error) {
+func dummyCompareTestFunc(ctx experiment.Context) (interface{}, error) {
 	return "control", nil
 }
 
-func dummyControlFunc(ctx context.Context) (interface{}, error) {
+func dummyControlFunc(ctx experiment.Context) (interface{}, error) {
 	return "control", nil
 }
 
