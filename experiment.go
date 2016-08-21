@@ -65,12 +65,12 @@ func (e *Experiment) Test(name string, b BehaviourFunc) error {
 // that any actual experiment runs (from other runners) that happen between
 // requesting a new runner and actually running the test will not influence it's
 // state.
-func (e *Experiment) Runner() (Runner, error) {
+func (e *Experiment) Runner() (*Runner, error) {
 	if _, ok := e.behaviours[controlKey]; !ok {
 		return nil, ErrMissingControl
 	}
 
-	return &experimentRunner{
+	return &Runner{
 		experiment: e,
 		config:     e.Config,
 		behaviours: e.behaviours,

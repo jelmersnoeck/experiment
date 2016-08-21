@@ -3,18 +3,7 @@ package experiment
 type (
 	// Result represents the result from running all the observations and comparing
 	// them with the given compare method.
-	Result interface {
-		// Mismatches represent the observations on which the given `Compare`
-		// option returned false.
-		Mismatches() []Observation
-		// Candidates represents all the observations which are not the control.
-		Candidates() []Observation
-		// Control represents the observation of the results from the control
-		// function.
-		Control() Observation
-	}
-
-	experimentResult struct {
+	Result struct {
 		mismatches   []Observation
 		candidates   []Observation
 		observations Observations
@@ -25,8 +14,8 @@ type (
 
 // NewResult takes an Observations type and will compare every test observation
 // in it with the control observation through the given ComparisonMethod.
-func NewResult(obs Observations, cm ComparisonMethod) Result {
-	return &experimentResult{
+func NewResult(obs Observations, cm ComparisonMethod) *Result {
+	return &Result{
 		observations: obs,
 		cm:           cm,
 	}
@@ -36,7 +25,7 @@ func NewResult(obs Observations, cm ComparisonMethod) Result {
 // to true with the given ComparisonMethod.
 // Note that this could potentially be an expensive method to run. It is advised
 // to look at these results in a goroutine.
-func (r *experimentResult) Mismatches() []Observation {
+func (r *Result) Mismatches() []Observation {
 	r.ensureRun()
 
 	return r.mismatches
@@ -46,18 +35,18 @@ func (r *experimentResult) Mismatches() []Observation {
 // with the given ComparisonMethod.
 // Note that this could potentially be an expensive method to run. It is advised
 // to look at these results in a goroutine.
-func (r *experimentResult) Candidates() []Observation {
+func (r *Result) Candidates() []Observation {
 	r.ensureRun()
 
 	return r.candidates
 }
 
 // Control returns the observation for the control test.
-func (r *experimentResult) Control() Observation {
+func (r *Result) Control() Observation {
 	return r.observations.Control()
 }
 
-func (r *experimentResult) ensureRun() {
+func (r *Result) ensureRun() {
 	if r.hasRun {
 		return
 	}
