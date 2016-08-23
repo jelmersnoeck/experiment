@@ -36,10 +36,10 @@ func newExperiment() *experiment.Experiment
         experiment.DefaultConfig(),
     )
 
-	exp.Control(func(ctx context.Context) (interface{}, error) {
+	exp.Control(func(ctx experiment.Context) (interface{}, error) {
 		return "my-text", nil
 	})
-	exp.Test("buffer", func(ctx context.Context) (interface{}, error) {
+	exp.Test("buffer", func(ctx experiment.Context) (interface{}, error) {
 		buf := bytes.NewBufferString("")
 		buf.WriteString("new")
 		buf.Write([]byte(`-`))
@@ -125,7 +125,7 @@ func main() {
     runner.Run(value)
 }
 
-func controlFunc(ctx context.Context) (interface{}, error) {
+func controlFunc(ctx experiment.Context) (interface{}, error) {
     test := context.Value(ctx, "key").(*Test)
 
     // The below value could either be "Foo" or "Bar" due to changing the `key`
@@ -136,7 +136,7 @@ func controlFunc(ctx context.Context) (interface{}, error) {
     return test, nil
 }
 
-func testFunc(ctx context.Context) (interface{}, error) {
+func testFunc(ctx experiment.Context) (interface{}, error) {
     test := context.Value(ctx, "key").(*Test)
     test.Value = "Bar"
 
@@ -244,12 +244,12 @@ func main() {
 	// do more experiment setup and run it
 }
 
-func mySetup(ctx context.Context) context.Context {
+func mySetup(ctx experiment.Context) experiment.Context {
 	expensive := myExpensiveSetup()
 	return context.WithValue(ctx, "my-thing", expensive)
 }
 
-func myControlFunc(ctx context.Context) (interface{}, error) {
+func myControlFunc(ctx experiment.Context) (interface{}, error) {
 	thing := ctx.Value("my-thing")
 
 	// logic with `thing`
