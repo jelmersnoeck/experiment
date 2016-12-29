@@ -11,10 +11,10 @@ type (
 		// Value is the outcome of the test that has run. This is a result of a
 		// BebaviourFunc.
 		Value interface{}
-		// Error is an error that might have occured while running the test.
+		// Error is an error that might have occurred while running the test.
 		// This is a result of a BehaviourFunc.
 		Error error
-		// Panic is a panic that might have occured whilst running the test.
+		// Panic is a panic that might have occurred whilst running the test.
 		// Panics are only associated with tests. The Control function will
 		// panic as it would be doing without the experiment wrapper.
 		Panic interface{}
