@@ -1,94 +1,165 @@
-// Package experiment provides tools to test and evaluate refactored code paths.
 package experiment
 
 import (
 	"errors"
-	"fmt"
-	"sync"
-)
-
-const (
-	controlKey = "control"
+	"math/rand"
 )
 
 type (
-	// Experiment is the experiment runner. It contains all the logic on how to run
-	// experiments against controls and for a given number of users.
-	Experiment struct {
-		sync.Mutex
-		Config Config
-
-		hits       float32
-		runs       float32
-		behaviours map[string]*behaviour
-	}
+	CandidateFunc func() (interface{}, error)
 )
 
-var (
-	// ErrMissingControl is returned when there is no control function set for the
-	// experiment
-	ErrMissingControl = errors.New("No control function was given.")
-)
+// Experiment represents a new refactoring experiment. This is where you'll
+// define your control and candidates on and this will run the experiment
+// according to the configuration.
+type Experiment struct {
+	Config *Config
 
-// New will create a new experiment with the given config. Experiments are safe
-// for concurrent usage.
-func New(cfg Config) *Experiment {
-	return &Experiment{Config: cfg}
+	shouldRun    bool
+	candidates   map[string]CandidateFunc
+	observations map[string]observation
 }
 
-// Control sets the control method for this experiment. The control should only
-// be set once and this will return an error if this is not the case.
-func (e *Experiment) Control(b BehaviourFunc) error {
-	return e.Test(controlKey, b)
-}
-
-// Test adds a test case to the exeriment. If a test case with the same name is
-// already used, an error will be returned.
-func (e *Experiment) Test(name string, b BehaviourFunc) error {
-	e.Lock()
-	defer e.Unlock()
-
-	if e.behaviours == nil {
-		e.behaviours = map[string]*behaviour{}
+// New creates a new Experiment with the given configuration options.
+func New(cfgs ...ConfigFunc) *Experiment {
+	cfg := &Config{}
+	for _, c := range cfgs {
+		c(cfg)
 	}
 
-	if _, ok := e.behaviours[name]; ok {
-		return fmt.Errorf("Behaviour `%s` already exists.", name)
+	return &Experiment{
+		Config:       cfg,
+		shouldRun:    cfg.Percentage > 0 && rand.Intn(100) <= cfg.Percentage,
+		candidates:   map[string]CandidateFunc{},
+		observations: map[string]observation{},
+	}
+}
+
+// Before filter to do expensive setup only when the experiment is going to run.
+// This will be skipped if the experiment doesn't need to run. A good use case
+// would be to do a deep copy of a struct.
+func (e *Experiment) Before(fnc func() error) {
+}
+
+// Control represents the control function, this resembles the old or current
+// implementation. This function will always run, regardless of the
+// configuration percentage or overwrites. If this function panics, the
+// application will panic.
+// The output of this function will be the base to what all the candidates will
+// be compared to.
+func (e *Experiment) Control(fnc CandidateFunc) {
+	e.Candidate("control", fnc)
+}
+
+// Candidate represents a refactoring solution. The order of candidates is
+// randomly determined.
+// If the concurrent configuration is given, candidates will run concurrently.
+// If a candidate panics, your application will not panic, but the candidate
+// will be marked as failed.
+func (e *Experiment) Candidate(name string, fnc CandidateFunc) {
+	e.candidates[name] = fnc
+}
+
+// Compare represents the comparison functionality between a control and a
+// candidate.
+func (e *Experiment) Compare(fnc func(interface{}, interface{}) bool) {
+}
+
+// Clean will cleanup the state of a candidate (control included). This is done
+// so the state could be cleaned up before storing for later comparison.
+func (e *Experiment) Clean(fnc func(interface{})) {
+}
+
+// Force lets you overwrite the percentage. If set to true, the candidates will
+// definitely run.
+func (e *Experiment) Force(f bool) {
+	if f == true {
+		e.shouldRun = true
+	}
+}
+
+// Ignore lets you decide if the experiment should be ignored this run or not.
+// If set to true, the candidates will not run.
+func (e *Experiment) Ignore(i bool) {
+	if i == true {
+		e.shouldRun = false
+	}
+}
+
+type observation struct {
+	name  string
+	value interface{}
+	err   error
+}
+
+// Run runs all the candidates and control in a random order. The value of the
+// control function will be returned.
+// If the concurrency configuration is given, this will return as soon as the
+// control has finished running.
+func (e *Experiment) Run() (interface{}, error) {
+	// don't run the candidates, just the control
+	if !e.shouldRun {
+		fnc := e.candidates["control"]
+		return fnc()
 	}
 
-	e.behaviours[name] = newBehaviour(name, b)
-	return nil
+	cChan := make(chan observation)
+	go e.run(cChan)
+
+	select {
+	case obs := <-cChan:
+		return obs.value, obs.err
+	}
 }
 
-// Runner will return a new Runenr instance which can be used to run the actual
-// experiment. A runner is not safe for concurrent usage, but this method is.
-// At the point of calling this method, we will copy the hitrate, which means
-// that any actual experiment runs (from other runners) that happen between
-// requesting a new runner and actually running the test will not influence it's
-// state.
-func (e *Experiment) Runner() (*Runner, error) {
-	if _, ok := e.behaviours[controlKey]; !ok {
-		return nil, ErrMissingControl
+func (e *Experiment) run(cChan chan observation) {
+	ack := e.ack()
+	obsChan := make(chan observation)
+
+	for k, v := range e.candidates {
+		go func(name string, fnc CandidateFunc) {
+			ack <- true
+
+			defer func() {
+				if name == "control" {
+					return
+				}
+
+				if r := recover(); r != nil {
+					obsChan <- observation{
+						name:  name,
+						value: r,
+						err:   errors.New("Panic"),
+					}
+				}
+			}()
+
+			v, err := fnc()
+
+			obsChan <- observation{
+				name:  name,
+				value: v,
+				err:   err,
+			}
+		}(k, v)
 	}
 
-	return &Runner{
-		experiment: e,
-		config:     e.Config,
-		behaviours: e.behaviours,
-		testMode:   TestMode,
-		hits:       e.hits,
-		runs:       e.runs,
-	}, nil
+	for range e.candidates {
+		select {
+		case obs := <-obsChan:
+			if obs.name == "control" {
+				cChan <- obs
+			}
+
+			e.observations[obs.name] = obs
+		}
+	}
 }
 
-func (e *Experiment) hit() {
-	e.Lock()
-	e.hits++
-	e.Unlock()
-}
+func (e *Experiment) ack() chan bool {
+	if e.Config.Concurrency {
+		return make(chan bool, len(e.candidates))
+	}
 
-func (e *Experiment) run() {
-	e.Lock()
-	e.runs++
-	e.Unlock()
+	return make(chan bool, 1)
 }
