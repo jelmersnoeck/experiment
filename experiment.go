@@ -17,7 +17,7 @@ type Experiment struct {
 
 	shouldRun    bool
 	candidates   map[string]CandidateFunc
-	observations map[string]observation
+	observations map[string]Observation
 }
 
 // New creates a new Experiment with the given configuration options.
@@ -31,7 +31,7 @@ func New(cfgs ...ConfigFunc) *Experiment {
 		Config:       cfg,
 		shouldRun:    cfg.Percentage > 0 && rand.Intn(100) <= cfg.Percentage,
 		candidates:   map[string]CandidateFunc{},
-		observations: map[string]observation{},
+		observations: map[string]Observation{},
 	}
 }
 
@@ -86,12 +86,6 @@ func (e *Experiment) Ignore(i bool) {
 	}
 }
 
-type observation struct {
-	name  string
-	value interface{}
-	err   error
-}
-
 // Run runs all the candidates and control in a random order. The value of the
 // control function will be returned.
 // If the concurrency configuration is given, this will return as soon as the
@@ -103,18 +97,18 @@ func (e *Experiment) Run() (interface{}, error) {
 		return fnc()
 	}
 
-	cChan := make(chan observation)
+	cChan := make(chan Observation)
 	go e.run(cChan)
 
 	select {
 	case obs := <-cChan:
-		return obs.value, obs.err
+		return obs.Value, obs.Err
 	}
 }
 
-func (e *Experiment) run(cChan chan observation) {
+func (e *Experiment) run(cChan chan Observation) {
 	ack := e.ack()
-	obsChan := make(chan observation)
+	obsChan := make(chan Observation)
 
 	for k, v := range e.candidates {
 		go func(name string, fnc CandidateFunc) {
@@ -126,20 +120,20 @@ func (e *Experiment) run(cChan chan observation) {
 				}
 
 				if r := recover(); r != nil {
-					obsChan <- observation{
-						name:  name,
-						value: r,
-						err:   errors.New("Panic"),
+					obsChan <- Observation{
+						Name:  name,
+						Value: r,
+						Err:   errors.New("Panic"),
 					}
 				}
 			}()
 
 			v, err := fnc()
 
-			obsChan <- observation{
-				name:  name,
-				value: v,
-				err:   err,
+			obsChan <- Observation{
+				Name:  name,
+				Value: v,
+				Err:   err,
 			}
 		}(k, v)
 	}
@@ -147,11 +141,11 @@ func (e *Experiment) run(cChan chan observation) {
 	for range e.candidates {
 		select {
 		case obs := <-obsChan:
-			if obs.name == "control" {
+			if obs.Name == "control" {
 				cChan <- obs
 			}
 
-			e.observations[obs.name] = obs
+			e.observations[obs.Name] = obs
 		}
 	}
 }
