@@ -1,38 +1,46 @@
 package experiment
 
-var (
-	// TestMode indicates if the code is executed as part of the test suite.
-	// When TestMode is enabled, all the experiment tests will always run,
-	// regardless of any other settings. Any potential panics that are caused
-	// in any of the tests will also not be recovered but actually panic.
-	TestMode = false
-)
+// Config represents the configuration options for an experiment.
+type Config struct {
+	Percentage  int
+	Publisher   Publisher
+	Concurrency bool
+}
 
-type (
-	// Config is the configuration used to set up an experiment. Config is not
-	// safe for concurrent use.
-	Config struct {
-		Percentage    float32 `json:"percentage"`
-		BeforeFilters []BeforeFilter
+// Publisher represents an interface that allows you to publish results.
+type Publisher interface {
+	Publish(Observation)
+}
+
+// ConfigFunc represents a function that knows how to set a configuration option.
+type ConfigFunc func(*Config)
+
+// WithPercentage returns a new ConfigFunc that sets the percentage.
+func WithPercentage(p int) ConfigFunc {
+	return func(c *Config) {
+		c.Percentage = p
 	}
+}
 
-	// BeforeFilter is a wrapper around a method that is purely used to take a
-	// context, adjust it and return a new context with the adjusted values.
-	BeforeFilter func(Context) Context
+// WithPublisher returns a new ConfigFunc that sets the publisher.
+func WithPublisher(p Publisher) ConfigFunc {
+	return func(c *Config) {
+		c.Publisher = p
+	}
+}
 
-	// ComparisonMethod is used as an interface for creating a method in which we
-	// want to compare the observations of a test. This being the Control and a
-	// random Test case.
-	ComparisonMethod func(Observation, Observation) bool
+// WithConcurrency forces the experiment to run concurrently
+func WithConcurrency() ConfigFunc {
+	return func(c *Config) {
+		c.Concurrency = true
+	}
+}
 
-	// ConditionalFunc is used to determine on run time whether or not we should
-	// run the tests.
-	ConditionalFunc func(Context) bool
-)
-
-// DefaultConfig sets up a default configuration where the Percentage is 100.
-func DefaultConfig() Config {
-	return Config{
-		Percentage: 100,
+// WithDefaultConfig returns a new configuration with defaults.
+func WithDefaultConfig() ConfigFunc {
+	return func(c *Config) {
+		c.Percentage = 0
+		c.Concurrency = false
+		c.Publisher = nil
 	}
 }

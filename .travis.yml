@@ -1,12 +1,7 @@
 language: go
-before_script:
-  - go get -u golang.org/x/net/context
-script: go test -race -v -bench=. -run=. ./...
-os:
-  - linux
-  - osx
-go:
-    - 1.5
-    - 1.6
-    - 1.7
-    - tip
+go: [ 1.9.x ]
+
+install: make bootstrap
+script: make ci
+
+after_success: bash <(curl -s https://codecov.io/bash)
