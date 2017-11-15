@@ -1,8 +1,9 @@
 # Experiment
 
+[![GitHub release](https://img.shields.io/github/tag/jelmersnoeck/experiment.svg?label=latest)](https://github.com/jelmersnoeck/experiment/releases)
 [![Build Status](https://travis-ci.org/jelmersnoeck/experiment.svg?branch=master)](https://travis-ci.org/jelmersnoeck/experiment)
 [![GoDoc](https://godoc.org/github.com/jelmersnoeck/experiment?status.svg)](https://godoc.org/github.com/jelmersnoeck/experiment)
-[![Report Card]](https://goreportcard.com/badge/github.com/jelmersnoeck/experiment)
+[![Report Card](https://goreportcard.com/badge/github.com/jelmersnoeck/experiment)](https://goreportcard.com/report/github.com/jelmersnoeck/experiment)
 
 Experiment is a Go package to test and evaluate new code paths without
 interfering with the users end result.
