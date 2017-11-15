@@ -133,7 +133,8 @@ func TestRun_Ignore(t *testing.T) {
 }
 
 func TestRun_Concurrent(t *testing.T) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 	exp, pub := testExperiment(experiment.WithConcurrency())
 	expected := 5
 	eChan := make(chan bool)
