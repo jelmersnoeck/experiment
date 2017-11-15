@@ -12,7 +12,7 @@ type (
 	// functionality should be defined by the user.
 	BeforeFunc func() error
 
-	// CaniddateFunc represents a function that is implemented by a candidate.
+	// CandidateFunc represents a function that is implemented by a candidate.
 	// The value returned is the value that will be used to compare data.
 	CandidateFunc func() (interface{}, error)
 
@@ -32,7 +32,7 @@ var (
 	ErrControlCandidate = errors.New("Can't use a candidate with the name 'control'")
 
 	// ErrCandidatePanic represents the error that a candidate panicked.
-	ErrCandidatePanic = errors.New("Candidate panicked.")
+	ErrCandidatePanic = errors.New("candidate panicked")
 )
 
 // Experiment represents a new refactoring experiment. This is where you'll
@@ -112,7 +112,7 @@ func (e *Experiment) Clean(fnc CleanFunc) {
 // Force lets you overwrite the percentage. If set to true, the candidates will
 // definitely run.
 func (e *Experiment) Force(f bool) {
-	if f == true {
+	if f {
 		e.shouldRun = true
 	}
 }
@@ -120,7 +120,7 @@ func (e *Experiment) Force(f bool) {
 // Ignore lets you decide if the experiment should be ignored this run or not.
 // If set to true, the candidates will not run.
 func (e *Experiment) Ignore(i bool) {
-	if i == true {
+	if i {
 		e.shouldRun = false
 	}
 }
@@ -143,10 +143,8 @@ func (e *Experiment) Run() (interface{}, error) {
 	cChan := make(chan *Observation)
 	go e.run(cChan)
 
-	select {
-	case obs := <-cChan:
-		return obs.Value, obs.Error
-	}
+	obs := <-cChan
+	return obs.Value, obs.Error
 }
 
 func (e *Experiment) run(cChan chan *Observation) {
@@ -166,14 +164,12 @@ func (e *Experiment) runConcurrent(cChan chan *Observation) {
 	}
 
 	for range e.candidates {
-		select {
-		case obs := <-obsChan:
-			if obs.Name == "control" {
-				cChan <- obs
-			}
+		obs := <-obsChan
 
-			e.observations[obs.Name] = obs
+		if obs.Name == "control" {
+			cChan <- obs
 		}
+		e.observations[obs.Name] = obs
 	}
 
 	e.conclude()
@@ -186,10 +182,8 @@ func (e *Experiment) runSequential(cChan chan *Observation) {
 			runCandidate(k, v, obsChan)
 		}(k, v)
 
-		select {
-		case obs := <-obsChan:
-			e.observations[obs.Name] = obs
-		}
+		obs := <-obsChan
+		e.observations[obs.Name] = obs
 	}
 
 	e.conclude()
