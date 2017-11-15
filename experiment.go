@@ -3,10 +3,33 @@ package experiment
 import (
 	"errors"
 	"math/rand"
+	"time"
 )
 
 type (
+	// BeforeFunc represents the function that gets run before the experiment
+	// starts. This function will only run if the experiment should run. The
+	// functionality should be defined by the user.
+	BeforeFunc func() error
+
+	// CaniddateFunc represents a function that is implemented by a candidate.
+	// The value returned is the value that will be used to compare data.
 	CandidateFunc func() (interface{}, error)
+
+	// CleanFunc represents the function that cleans up the output data. This
+	// function will only be called for candidates that did not error.
+	CleanFunc func(interface{}) interface{}
+
+	// CompareFunc represents the function that takes two candidates and knows
+	// how to compare them. The functionality is implemented by the user. This
+	// function will only be called for candidates that did not error.
+	CompareFunc func(interface{}, interface{}) bool
+)
+
+var (
+	// ErrControlCandidate is returned when a candidate is initiated with
+	// control as it's name.
+	ErrControlCandidate = errors.New("Can't use a candidate with the name 'control'")
 )
 
 // Experiment represents a new refactoring experiment. This is where you'll
@@ -17,7 +40,11 @@ type Experiment struct {
 
 	shouldRun    bool
 	candidates   map[string]CandidateFunc
-	observations map[string]Observation
+	observations map[string]*Observation
+
+	before  BeforeFunc
+	compare CompareFunc
+	clean   CleanFunc
 }
 
 // New creates a new Experiment with the given configuration options.
@@ -31,14 +58,15 @@ func New(cfgs ...ConfigFunc) *Experiment {
 		Config:       cfg,
 		shouldRun:    cfg.Percentage > 0 && rand.Intn(100) <= cfg.Percentage,
 		candidates:   map[string]CandidateFunc{},
-		observations: map[string]Observation{},
+		observations: map[string]*Observation{},
 	}
 }
 
 // Before filter to do expensive setup only when the experiment is going to run.
 // This will be skipped if the experiment doesn't need to run. A good use case
 // would be to do a deep copy of a struct.
-func (e *Experiment) Before(fnc func() error) {
+func (e *Experiment) Before(fnc BeforeFunc) {
+	e.before = fnc
 }
 
 // Control represents the control function, this resembles the old or current
@@ -48,7 +76,7 @@ func (e *Experiment) Before(fnc func() error) {
 // The output of this function will be the base to what all the candidates will
 // be compared to.
 func (e *Experiment) Control(fnc CandidateFunc) {
-	e.Candidate("control", fnc)
+	e.candidates["control"] = fnc
 }
 
 // Candidate represents a refactoring solution. The order of candidates is
@@ -56,18 +84,26 @@ func (e *Experiment) Control(fnc CandidateFunc) {
 // If the concurrent configuration is given, candidates will run concurrently.
 // If a candidate panics, your application will not panic, but the candidate
 // will be marked as failed.
-func (e *Experiment) Candidate(name string, fnc CandidateFunc) {
+// If the name is control, this will error and not add the candidate.
+func (e *Experiment) Candidate(name string, fnc CandidateFunc) error {
+	if name == "control" {
+		return ErrControlCandidate
+	}
+
 	e.candidates[name] = fnc
+	return nil
 }
 
 // Compare represents the comparison functionality between a control and a
 // candidate.
-func (e *Experiment) Compare(fnc func(interface{}, interface{}) bool) {
+func (e *Experiment) Compare(fnc CompareFunc) {
+	e.compare = fnc
 }
 
 // Clean will cleanup the state of a candidate (control included). This is done
 // so the state could be cleaned up before storing for later comparison.
-func (e *Experiment) Clean(fnc func(interface{})) {
+func (e *Experiment) Clean(fnc CleanFunc) {
+	e.clean = fnc
 }
 
 // Force lets you overwrite the percentage. If set to true, the candidates will
@@ -97,44 +133,32 @@ func (e *Experiment) Run() (interface{}, error) {
 		return fnc()
 	}
 
-	cChan := make(chan Observation)
+	if e.before != nil {
+		e.before()
+	}
+
+	cChan := make(chan *Observation)
 	go e.run(cChan)
 
 	select {
 	case obs := <-cChan:
-		return obs.Value, obs.Err
+		return obs.Value, obs.Error
 	}
 }
 
-func (e *Experiment) run(cChan chan Observation) {
-	ack := e.ack()
-	obsChan := make(chan Observation)
+func (e *Experiment) run(cChan chan *Observation) {
+	if e.Config.Concurrency {
+		e.runConcurrent(cChan)
+	} else {
+		e.runSequential(cChan)
+	}
+}
 
+func (e *Experiment) runConcurrent(cChan chan *Observation) {
+	obsChan := make(chan *Observation)
 	for k, v := range e.candidates {
 		go func(name string, fnc CandidateFunc) {
-			ack <- true
-
-			defer func() {
-				if name == "control" {
-					return
-				}
-
-				if r := recover(); r != nil {
-					obsChan <- Observation{
-						Name:  name,
-						Value: r,
-						Err:   errors.New("Panic"),
-					}
-				}
-			}()
-
-			v, err := fnc()
-
-			obsChan <- Observation{
-				Name:  name,
-				Value: v,
-				Err:   err,
-			}
+			runCandidate(name, fnc, obsChan)
 		}(k, v)
 	}
 
@@ -148,12 +172,87 @@ func (e *Experiment) run(cChan chan Observation) {
 			e.observations[obs.Name] = obs
 		}
 	}
+
+	e.conclude()
 }
 
-func (e *Experiment) ack() chan bool {
-	if e.Config.Concurrency {
-		return make(chan bool, len(e.candidates))
+func (e *Experiment) runSequential(cChan chan *Observation) {
+	obsChan := make(chan *Observation)
+	for k, v := range e.candidates {
+		go func(name string, fnc CandidateFunc) {
+			runCandidate(k, v, obsChan)
+		}(k, v)
+
+		select {
+		case obs := <-obsChan:
+			e.observations[obs.Name] = obs
+		}
 	}
 
-	return make(chan bool, 1)
+	e.conclude()
+
+	cChan <- e.observations["control"]
+}
+
+func (e *Experiment) conclude() {
+	control := e.observations["control"]
+
+	if e.compare != nil {
+		for k, o := range e.observations {
+			if k == "control" {
+				continue
+			}
+
+			if o.Error == nil {
+				o.Success = e.compare(control.Value, o.Value)
+			}
+		}
+	}
+
+	for _, o := range e.observations {
+		if o.Error == nil {
+			if e.clean != nil {
+				o.CleanValue = e.clean(o.Value)
+			} else {
+				o.CleanValue = o.Value
+			}
+		}
+	}
+
+	if e.Config.Publisher != nil {
+		for _, o := range e.observations {
+			e.Config.Publisher.Publish(*o)
+		}
+	}
+}
+
+func runCandidate(name string, fnc CandidateFunc, obsChan chan *Observation) {
+	start := time.Now()
+
+	defer func() {
+		if name == "control" {
+			return
+		}
+
+		if r := recover(); r != nil {
+			end := time.Now()
+
+			obsChan <- &Observation{
+				Name:     name,
+				Value:    r,
+				Error:    errors.New("Panic"),
+				Duration: end.Sub(start),
+			}
+		}
+	}()
+
+	v, err := fnc()
+	end := time.Now()
+
+	obsChan <- &Observation{
+		Name:     name,
+		Value:    v,
+		Error:    err,
+		Duration: end.Sub(start),
+	}
 }
