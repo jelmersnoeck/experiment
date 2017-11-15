@@ -1,5 +1,10 @@
 # Changelog
 
+## v2 - 2017-11-15
+
+The experiment engine has been completely rewritten. It's a lot simpler in usage
+and architecture.
+
 ## v1.1.0 - 2016-08-22
 
 - Removed testify dependency
