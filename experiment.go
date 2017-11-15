@@ -137,7 +137,9 @@ func (e *Experiment) Run() (interface{}, error) {
 	}
 
 	if e.before != nil {
-		e.before()
+		if err := e.before(); err != nil {
+			return nil, err
+		}
 	}
 
 	cChan := make(chan *Observation)
