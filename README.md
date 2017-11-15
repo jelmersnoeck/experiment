@@ -7,6 +7,7 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![GoDoc](https://godoc.org/github.com/jelmersnoeck/experiment?status.svg)](https://godoc.org/github.com/jelmersnoeck/experiment)
 [![Report Card](https://goreportcard.com/badge/github.com/jelmersnoeck/experiment)](https://goreportcard.com/report/github.com/jelmersnoeck/experiment)
+[![codecov](https://codecov.io/gh/jelmersnoeck/experiment/branch/master/graph/badge.svg)](https://codecov.io/gh/jelmersnoeck/experiment)
 
 Experiment is a Go package to test and evaluate new code paths without
 interfering with the users end result.
