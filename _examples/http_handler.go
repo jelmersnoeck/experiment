@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,22 +11,30 @@ import (
 
 type handleFunc func(http.ResponseWriter, *http.Request)
 
+type logPublisher struct{}
+
+func (l *logPublisher) Publish(o experiment.Observation) {
+	log.Printf(
+		"[Experiment Observation] name=%s duration=%s success=%t value=%v error=%v",
+		o.Name, o.Duration, o.Success, o.CleanValue, o.Error,
+	)
+}
+
 func main() {
 	http.HandleFunc("/hello", exampleHandler())
 	log.Fatal(http.ListenAndServe(":12345", nil))
 }
 
 func exampleHandler() handleFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		exp := experiment.New(
-			experiment.WithName("example-test"),
 			experiment.WithPercentage(50),
-			experiment.WithPublisher(nil),
+			experiment.WithPublisher(&logPublisher{}),
 			experiment.WithConcurrency(),
 		)
 
 		exp.Before(func() error {
+			fmt.Println("before")
 			return nil
 		})
 
@@ -34,28 +43,31 @@ func exampleHandler() handleFunc {
 		})
 
 		exp.Candidate("foo", func() (interface{}, error) {
+			fmt.Println("foo")
 			return "Hello foo", nil
 		})
 
 		exp.Candidate("bar", func() (interface{}, error) {
+			fmt.Println("bar")
 			return "Hello bar", nil
 		})
 
 		exp.Candidate("baz", func() (interface{}, error) {
-			return "Hello baz", nil
+			return nil, errors.New("bar")
 		})
 
 		exp.Compare(func(control interface{}, candidate interface{}) bool {
+			fmt.Printf("Comparing '%s' with '%s'\n", control.(string), candidate.(string))
 			return control.(string) == candidate.(string)
 		})
 
-		exp.Clean(func(c interface{}) {
-			// do cleanup
+		exp.Clean(func(c interface{}) interface{} {
+			fmt.Println("cleanup")
+			return c
 		})
 
-		// exp.Force(user.IsAdmin())
-
-		// exp.Ignore(env.Test())
+		exp.Force(r.URL.Query().Get("force") == "true")
+		exp.Ignore(r.URL.Query().Get("ignore") == "true")
 
 		result, err := exp.Run()
 		if err != nil {
