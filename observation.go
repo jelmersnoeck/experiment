@@ -8,6 +8,7 @@ type Observation struct {
 	Error      error
 	Success    bool
 	Name       string
+	Panic      interface{}
 	Value      interface{}
 	CleanValue interface{}
 }

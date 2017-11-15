@@ -30,6 +30,9 @@ var (
 	// ErrControlCandidate is returned when a candidate is initiated with
 	// control as it's name.
 	ErrControlCandidate = errors.New("Can't use a candidate with the name 'control'")
+
+	// ErrCandidatePanic represents the error that a candidate panicked.
+	ErrCandidatePanic = errors.New("Candidate panicked.")
 )
 
 // Experiment represents a new refactoring experiment. This is where you'll
@@ -239,8 +242,8 @@ func runCandidate(name string, fnc CandidateFunc, obsChan chan *Observation) {
 
 			obsChan <- &Observation{
 				Name:     name,
-				Value:    r,
-				Error:    errors.New("Panic"),
+				Panic:    r,
+				Error:    ErrCandidatePanic,
 				Duration: end.Sub(start),
 			}
 		}
