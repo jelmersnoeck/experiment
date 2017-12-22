@@ -153,6 +153,8 @@ is also an `Error` attribute available, which contains the error returned.
 When the control errors, this will be returned in the `Run()` method. When a
 candidate errors, this will be attached to the `Error` field in its observation.
 
+An error marks the experiment as a failure.
+
 ### Panics
 
 When the control panics, this panic will be respected and actually be triggered.
