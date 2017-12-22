@@ -14,6 +14,40 @@ interfering with the users end result.
 
 This is inspired by the [GitHub Scientist gem](https://github.com/github/scientist).
 
+## Use cases
+
+Imagine a web application where you're generating images. You decide to
+investigate a new imaging package which seems to fit your needs more than the
+current package you're using. Tests help you transition from one package to
+the other, but you want to see how this behaves under load.
+
+```go
+func main() {
+	exp := experiment.New(
+		experiment.WithPercentage(50),
+		experiment.WithConcurrency(),
+	)
+
+	// fetch arbitrary data
+	userData := getUserData()
+
+	exp.Control(func() (interface{}, error) {
+		return dataToPng.Render(userData)
+	})
+
+	exp.Candidate("", func() (interface{}, error) {
+		return imageX.Render(userData)
+	})
+
+	result, err := exp.Run()
+}
+```
+
+This allows you to serve the original content, `dataToPng.Render()` to the user
+whilst also testing the new package, `imageX`, in the background. This means
+that your end-user doesn't see any impact, but you get valuable information
+about your new implementation.
+
 ## Usage
 
 ### Control
