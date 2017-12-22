@@ -198,11 +198,12 @@ func (e *Experiment) conclude() {
 
 	if e.compare != nil {
 		for k, o := range e.observations {
-			if k == "control" {
-				continue
-			}
-
 			if o.Error == nil {
+				if k == "control" {
+					o.Success = true
+					continue
+				}
+
 				o.Success = e.compare(control.Value, o.Value)
 			}
 		}

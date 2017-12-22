@@ -11,15 +11,6 @@ import (
 
 type handleFunc func(http.ResponseWriter, *http.Request)
 
-type logPublisher struct{}
-
-func (l *logPublisher) Publish(o experiment.Observation) {
-	log.Printf(
-		"[Experiment Observation] name=%s duration=%s success=%t value=%v error=%v",
-		o.Name, o.Duration, o.Success, o.CleanValue, o.Error,
-	)
-}
-
 func main() {
 	http.HandleFunc("/hello", exampleHandler())
 	log.Fatal(http.ListenAndServe(":12345", nil))
@@ -29,7 +20,7 @@ func exampleHandler() handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		exp := experiment.New(
 			experiment.WithPercentage(50),
-			experiment.WithPublisher(&logPublisher{}),
+			experiment.WithPublisher(&experiment.LogPublisher{}),
 			experiment.WithConcurrency(),
 		)
 

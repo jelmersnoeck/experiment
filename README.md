@@ -14,6 +14,40 @@ interfering with the users end result.
 
 This is inspired by the [GitHub Scientist gem](https://github.com/github/scientist).
 
+## Use cases
+
+Imagine a web application where you're generating images. You decide to
+investigate a new imaging package which seems to fit your needs more than the
+current package you're using. Tests help you transition from one package to
+the other, but you want to see how this behaves under load.
+
+```go
+func main() {
+	exp := experiment.New(
+		experiment.WithPercentage(50),
+		experiment.WithConcurrency(),
+	)
+
+	// fetch arbitrary data
+	userData := getUserData()
+
+	exp.Control(func() (interface{}, error) {
+		return dataToPng.Render(userData)
+	})
+
+	exp.Candidate("", func() (interface{}, error) {
+		return imageX.Render(userData)
+	})
+
+	result, err := exp.Run()
+}
+```
+
+This allows you to serve the original content, `dataToPng.Render()` to the user
+whilst also testing the new package, `imageX`, in the background. This means
+that your end-user doesn't see any impact, but you get valuable information
+about your new implementation.
+
 ## Usage
 
 ### Control
@@ -25,6 +59,27 @@ run as it would run normally.
 A control is always expected. If no control is provided, the experiment will
 panic.
 
+```go
+func main() {
+	exp := experiment.New(
+		experiment.WithPercentage(50),
+	)
+
+	exp.Control(func() (interface{}, error) {
+		return fmt.Sprintf("Hello world!"), nil
+	})
+
+	result, err := exp.Run()
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Println(result.(string))
+	}
+}
+```
+
+The example above will always print `Hello world!`.
+
 ### Candidate
 
 `Candidate(string, func() (interface{}, error))` is a potential refactored
@@ -34,10 +89,38 @@ is captured and the experiment continues.
 A candidate will not always run, this depends on the `WithPercentage(int)`
 configuration option and further overrides.
 
+```go
+func main() {
+	exp := experiment.New(
+		experiment.WithPercentage(50),
+	)
+
+	exp.Control(func() (interface{}, error) {
+		return fmt.Sprintf("Hello world!"), nil
+	})
+
+	exp.Candidate("candidate1", func() (interface{}, error) {
+		return "Hello candidate", nil
+	})
+
+	result, err := exp.Run()
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Println(result.(string))
+	}
+}
+```
+
+The example above will still only print `Hello world!`. The `candidate1`
+function will however run in the background 50% of the time.
+
 ### Run
 
 `Run()` will run the experiment and return the value and error of the control
-function.
+function. The control function is always executed. The result value of the
+`Run()` function is an interface. The user should cast this to the expected
+type.
 
 ### Force
 
@@ -104,6 +187,8 @@ is also an `Error` attribute available, which contains the error returned.
 When the control errors, this will be returned in the `Run()` method. When a
 candidate errors, this will be attached to the `Error` field in its observation.
 
+An error marks the experiment as a failure.
+
 ### Panics
 
 When the control panics, this panic will be respected and actually be triggered.
@@ -135,3 +220,42 @@ This is set to 0 by default to encourage setting a sensible percentage.
 all the results will be pushed to the Publisher once the experiment has run.
 
 This is nil by default.
+
+#### LogPublisher
+
+By default, there is the `LogPublisher`. This Publisher will log out the
+Observation values through a provided logger or the standard library logger.
+
+
+```go
+func main() {
+	exp := experiment.New(
+		experiment.WithPercentage(50),
+		experiment.WithPublisher(experiment.NewLogPublisher("publisher", nil)),
+	)
+
+	exp.Control(func() (interface{}, error) {
+		return fmt.Sprintf("Hello world!"), nil
+	})
+
+	exp.Candidate("candidate1", func() (interface{}, error) {
+		return "Hello candidate", nil
+	})
+
+	exp.Force(true)
+
+	result, err := exp.Run()
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Println(result.(string))
+	}
+}
+```
+
+When the experiment gets triggered, this will log out
+
+```
+[Experiment Observation: publisher] name=control duration=10.979µs success=false value=Hello world! error=<nil>
+[Experiment Observation: publisher] name=candidate1 duration=650ns success=false value=Hello candidate error=<nil>
+```
