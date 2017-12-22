@@ -25,6 +25,27 @@ run as it would run normally.
 A control is always expected. If no control is provided, the experiment will
 panic.
 
+```go
+func main() {
+	exp := experiment.New(
+		experiment.WithPercentage(50),
+	)
+
+	exp.Control(func() (interface{}, error) {
+		return fmt.Sprintf("Hello world!"), nil
+	})
+
+	result, err := exp.Run()
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Println(result.(string))
+	}
+}
+```
+
+The example above will always print `Hello world!`.
+
 ### Candidate
 
 `Candidate(string, func() (interface{}, error))` is a potential refactored
@@ -34,10 +55,38 @@ is captured and the experiment continues.
 A candidate will not always run, this depends on the `WithPercentage(int)`
 configuration option and further overrides.
 
+```go
+func main() {
+	exp := experiment.New(
+		experiment.WithPercentage(50),
+	)
+
+	exp.Control(func() (interface{}, error) {
+		return fmt.Sprintf("Hello world!"), nil
+	})
+
+	exp.Candidate("candidate1", func() (interface{}, error) {
+		return "Hello candidate", nil
+	})
+
+	result, err := exp.Run()
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Println(result.(string))
+	}
+}
+```
+
+The example above will still only print `Hello world!`. The `candidate1`
+function will however run in the background 50% of the time.
+
 ### Run
 
 `Run()` will run the experiment and return the value and error of the control
-function.
+function. The control function is always executed. The result value of the
+`Run()` function is an interface. The user should cast this to the expected
+type.
 
 ### Force
 
