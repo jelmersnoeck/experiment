@@ -184,3 +184,42 @@ This is set to 0 by default to encourage setting a sensible percentage.
 all the results will be pushed to the Publisher once the experiment has run.
 
 This is nil by default.
+
+#### LogPublisher
+
+By default, there is the `LogPublisher`. This Publisher will log out the
+Observation values through a provided logger or the standard library logger.
+
+
+```go
+func main() {
+	exp := experiment.New(
+		experiment.WithPercentage(50),
+		experiment.WithPublisher(experiment.NewLogPublisher("publisher", nil)),
+	)
+
+	exp.Control(func() (interface{}, error) {
+		return fmt.Sprintf("Hello world!"), nil
+	})
+
+	exp.Candidate("candidate1", func() (interface{}, error) {
+		return "Hello candidate", nil
+	})
+
+	exp.Force(true)
+
+	result, err := exp.Run()
+	if err != nil {
+		panic(err)
+	} else {
+		fmt.Println(result.(string))
+	}
+}
+```
+
+When the experiment gets triggered, this will log out
+
+```
+[Experiment Observation: publisher] name=control duration=10.979µs success=false value=Hello world! error=<nil>
+[Experiment Observation: publisher] name=candidate1 duration=650ns success=false value=Hello candidate error=<nil>
+```
