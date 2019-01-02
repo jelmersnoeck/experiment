@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/). Changelog
 
 ## Unreleased
 
+## v2.1.0 - 2019-01-02
+
 ### Added
 
 - `LogPublisher`, a Publisher that logs out the Observation values.
