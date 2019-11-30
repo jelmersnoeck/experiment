@@ -150,12 +150,13 @@ func TestRun_Concurrent(t *testing.T) {
 
 	exp.Run()
 
+checkLoop:
 	for i := 0; i < expected; i++ {
 		select {
 		case <-eChan:
 		case <-ctx.Done():
 			t.Errorf("Expected to run the experiment within one second")
-			break
+			break checkLoop
 		}
 	}
 
