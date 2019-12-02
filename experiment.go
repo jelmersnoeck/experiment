@@ -217,6 +217,7 @@ func (e *Experiment) conclude() {
 				o.CleanValue = o.Value
 			}
 		}
+		o.ControlValue = control.CleanValue
 	}
 
 	if e.Config.Publisher != nil {
