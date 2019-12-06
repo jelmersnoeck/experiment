@@ -196,6 +196,16 @@ func (e *Experiment) runSequential(cChan chan *Observation) {
 func (e *Experiment) conclude() {
 	control := e.observations["control"]
 
+	for _, o := range e.observations {
+		if o.Error == nil {
+			if e.clean != nil {
+				o.CleanValue = e.clean(o.Value)
+			} else {
+				o.CleanValue = o.Value
+			}
+		}
+	}
+
 	if e.compare != nil {
 		for k, o := range e.observations {
 			if o.Error == nil {
@@ -205,19 +215,9 @@ func (e *Experiment) conclude() {
 				}
 
 				o.Success = e.compare(control.Value, o.Value)
+				o.ControlValue = control.CleanValue
 			}
 		}
-	}
-
-	for _, o := range e.observations {
-		if o.Error == nil {
-			if e.clean != nil {
-				o.CleanValue = e.clean(o.Value)
-			} else {
-				o.CleanValue = o.Value
-			}
-		}
-		o.ControlValue = control.CleanValue
 	}
 
 	if e.Config.Publisher != nil {
