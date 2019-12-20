@@ -56,8 +56,7 @@ func TestRun_Sequential(t *testing.T) {
 
 	t.Run("it should record the clean control", func(t *testing.T) {
 		pub.fnc = func(o experiment.Observation) {
-			if o.Name != "control" {
-				fmt.Printf("%+v\n", o)
+			if o.Name != "control" && o.Error == nil {
 				if o.Panic == nil && o.ControlValue.(string) != "Cleaned control" {
 					t.Errorf("Expected value to be '%s', got '%s'", "Cleaned Control", o.ControlValue.(string))
 				}
