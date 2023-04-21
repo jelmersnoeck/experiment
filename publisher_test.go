@@ -12,7 +12,7 @@ func ExampleLogPublisher() {
 	)
 
 	exp.Control(func() (interface{}, error) {
-		return fmt.Sprintf("Hello world!"), nil
+		return "Hello world!", nil
 	})
 
 	result, err := exp.Run()

@@ -16,36 +16,26 @@ jobs:
     strategy:
       matrix:
         go:
-        - 1.11
-        - 1.12
-        - 1.13
+        - "1.18"
+        - "1.19"
+        - "1.20"
     steps:
 
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go ${{ matrix.go }}
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v4
       with:
         go-version: ${{ matrix.go }}
       id: go
 
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v1
-
-    - uses: actions/cache@v1
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
       with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+        version: latest
+        skip-go-installation: true
+        skip-cache: true
 
-    - name: Get dependencies
-      run: go mod download
-
-    - name: Run tests
-      run: make ci
-      env:
-        GO111MODULE: on
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v1.0.4
-      with:
-        token: ${{secrets.CODECOV_TOKEN}}
+    - name: Testing
+      run: go test -v ./...
