@@ -15,7 +15,7 @@ func TestRun_Sequential(t *testing.T) {
 	exp, pub := testExperiment()
 
 	t.Run("it should record a success", func(t *testing.T) {
-		pub.fnc = func(o experiment.Observation) {
+		pub.fnc = func(o experiment.Observation[string]) {
 			if o.Name == "correct" && !o.Success {
 				t.Errorf("Expected a success, got mismatch")
 			}
@@ -25,7 +25,7 @@ func TestRun_Sequential(t *testing.T) {
 	})
 
 	t.Run("it should record a mismatch", func(t *testing.T) {
-		pub.fnc = func(o experiment.Observation) {
+		pub.fnc = func(o experiment.Observation[string]) {
 			if o.Name == "mismatch" && o.Success {
 				t.Errorf("Expected a mismatch, got success")
 			}
@@ -35,7 +35,7 @@ func TestRun_Sequential(t *testing.T) {
 	})
 
 	t.Run("it should record an error", func(t *testing.T) {
-		pub.fnc = func(o experiment.Observation) {
+		pub.fnc = func(o experiment.Observation[string]) {
 			if o.Name == "error" && o.Error == nil {
 				t.Errorf("Expected an error, got none")
 			}
@@ -45,7 +45,7 @@ func TestRun_Sequential(t *testing.T) {
 	})
 
 	t.Run("it should record the panic", func(t *testing.T) {
-		pub.fnc = func(o experiment.Observation) {
+		pub.fnc = func(o experiment.Observation[string]) {
 			if o.Name == "panic" && o.Panic == nil {
 				t.Errorf("Expected a panic, did not record one")
 			}
@@ -55,10 +55,10 @@ func TestRun_Sequential(t *testing.T) {
 	})
 
 	t.Run("it should record the clean control", func(t *testing.T) {
-		pub.fnc = func(o experiment.Observation) {
+		pub.fnc = func(o experiment.Observation[string]) {
 			if o.Name != "control" && o.Error == nil {
-				if o.Panic == nil && o.ControlValue.(string) != "Cleaned control" {
-					t.Errorf("Expected value to be '%s', got '%s'", "Cleaned Control", o.ControlValue.(string))
+				if o.Panic == nil && o.ControlValue != "Cleaned control" {
+					t.Errorf("Expected value to be '%s', got '%s'", "Cleaned Control", o.ControlValue)
 				}
 			}
 		}
@@ -67,11 +67,11 @@ func TestRun_Sequential(t *testing.T) {
 	})
 
 	t.Run("it should record the clean control value", func(t *testing.T) {
-		pub.fnc = func(o experiment.Observation) {
+		pub.fnc = func(o experiment.Observation[string]) {
 			if o.Panic == nil && o.Error == nil && o.Success {
-				cleaned := fmt.Sprintf("Cleaned %s", o.Value.(string))
-				if o.CleanValue.(string) != cleaned {
-					t.Errorf("Expected value to be '%s', got '%s'", cleaned, o.CleanValue.(string))
+				cleaned := fmt.Sprintf("Cleaned %s", o.Value)
+				if o.CleanValue != cleaned {
+					t.Errorf("Expected value to be '%s', got '%s'", cleaned, o.CleanValue)
 				}
 			}
 		}
@@ -81,8 +81,8 @@ func TestRun_Sequential(t *testing.T) {
 
 	t.Run("it should return the correct value", func(t *testing.T) {
 		val, err := exp.Run()
-		if val.(string) != "control" {
-			t.Errorf("Expected value to be 'control', got '%s'", val.(string))
+		if val != "control" {
+			t.Errorf("Expected value to be 'control', got '%s'", val)
 		}
 
 		if err != nil {
@@ -92,10 +92,10 @@ func TestRun_Sequential(t *testing.T) {
 }
 
 func TestRun_Before(t *testing.T) {
-	exp := experiment.New()
+	exp := experiment.New[string]()
 	exp.Force(true)
 
-	exp.Control(func() (interface{}, error) {
+	exp.Control(func() (string, error) {
 		return "", nil
 	})
 
@@ -131,7 +131,7 @@ func TestRun_Ignore(t *testing.T) {
 
 	var count int
 	var lock sync.Mutex
-	pub.fnc = func(_ experiment.Observation) {
+	pub.fnc = func(_ experiment.Observation[string]) {
 		lock.Lock()
 		defer lock.Unlock()
 		count++
@@ -147,13 +147,14 @@ func TestRun_Ignore(t *testing.T) {
 func TestRun_Concurrent(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	exp, pub := testExperiment(experiment.WithConcurrency())
 	expected := 5
 	eChan := make(chan bool)
 
 	var count int
 	var lock sync.Mutex
-	pub.fnc = func(_ experiment.Observation) {
+	pub.fnc = func(o experiment.Observation[string]) {
 		lock.Lock()
 		defer lock.Unlock()
 		count++
@@ -177,54 +178,49 @@ checkLoop:
 	}
 }
 
-func testExperiment(cfg ...experiment.ConfigFunc) (*experiment.Experiment, *testPublisher) {
-	pub := &testPublisher{}
+func testExperiment(cfg ...experiment.ConfigFunc) (*experiment.Experiment[string], *testPublisher[string]) {
+	pub := &testPublisher[string]{}
 
-	config := []experiment.ConfigFunc{
-		experiment.WithPublisher(pub),
-	}
-	config = append(config, cfg...)
-
-	exp := experiment.New(config...)
+	exp := experiment.New[string](cfg...).WithPublisher(pub)
 	exp.Force(true)
 
-	exp.Control(func() (interface{}, error) {
+	exp.Control(func() (string, error) {
 		return "control", nil
 	})
 
-	exp.Candidate("correct", func() (interface{}, error) {
+	exp.Candidate("correct", func() (string, error) {
 		return "control", nil
 	})
 
-	exp.Candidate("mismatch", func() (interface{}, error) {
+	exp.Candidate("mismatch", func() (string, error) {
 		return "mismatch", nil
 	})
 
-	exp.Candidate("error", func() (interface{}, error) {
-		return nil, errors.New("errored")
+	exp.Candidate("error", func() (string, error) {
+		return "", errors.New("errored")
 	})
 
-	exp.Candidate("panic", func() (interface{}, error) {
+	exp.Candidate("panic", func() (string, error) {
 		panic("candidate")
 	})
 
-	exp.Compare(func(control interface{}, candidate interface{}) bool {
-		return control.(string) == candidate.(string)
+	exp.Compare(func(control, candidate string) bool {
+		return control == candidate
 	})
 
-	exp.Clean(func(c interface{}) interface{} {
-		return fmt.Sprintf("Cleaned %s", c.(string))
+	exp.Clean(func(c string) string {
+		return fmt.Sprintf("Cleaned %s", c)
 	})
 
 	return exp, pub
 
 }
 
-type testPublisher struct {
-	fnc func(experiment.Observation)
+type testPublisher[C any] struct {
+	fnc func(experiment.Observation[C])
 }
 
-func (t *testPublisher) Publish(o experiment.Observation) {
+func (t *testPublisher[C]) Publish(o experiment.Observation[C]) {
 	if t.fnc != nil {
 		t.fnc(o)
 	}

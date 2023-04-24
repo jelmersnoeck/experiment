@@ -18,41 +18,40 @@ func main() {
 
 func exampleHandler() handleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		exp := experiment.New(
+		exp := experiment.New[string](
 			experiment.WithPercentage(50),
-			experiment.WithPublisher(&experiment.LogPublisher{}),
 			experiment.WithConcurrency(),
-		)
+		).WithPublisher(&experiment.LogPublisher[string]{})
 
 		exp.Before(func() error {
 			fmt.Println("before")
 			return nil
 		})
 
-		exp.Control(func() (interface{}, error) {
+		exp.Control(func() (string, error) {
 			return fmt.Sprintf("Hello %s", r.URL.Query().Get("name")), nil
 		})
 
-		exp.Candidate("foo", func() (interface{}, error) {
+		exp.Candidate("foo", func() (string, error) {
 			fmt.Println("foo")
 			return "Hello foo", nil
 		})
 
-		exp.Candidate("bar", func() (interface{}, error) {
+		exp.Candidate("bar", func() (string, error) {
 			fmt.Println("bar")
 			return "Hello bar", nil
 		})
 
-		exp.Candidate("baz", func() (interface{}, error) {
-			return nil, errors.New("bar")
+		exp.Candidate("baz", func() (string, error) {
+			return "", errors.New("bar")
 		})
 
-		exp.Compare(func(control interface{}, candidate interface{}) bool {
-			fmt.Printf("Comparing '%s' with '%s'\n", control.(string), candidate.(string))
-			return control.(string) == candidate.(string)
+		exp.Compare(func(control, candidate string) bool {
+			fmt.Printf("Comparing '%s' with '%s'\n", control, candidate)
+			return control == candidate
 		})
 
-		exp.Clean(func(c interface{}) interface{} {
+		exp.Clean(func(c string) string {
 			fmt.Println("cleanup")
 			return c
 		})
@@ -65,7 +64,7 @@ func exampleHandler() handleFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 		} else {
-			w.Write([]byte(result.(string)))
+			w.Write([]byte(result))
 		}
 	}
 }

@@ -7,11 +7,10 @@ import (
 )
 
 func ExampleLogPublisher() {
-	exp := experiment.New(
-		experiment.WithPublisher(experiment.NewLogPublisher("publisher", &fmtLogger{})),
-	)
+	exp := experiment.New[string]().
+		WithPublisher(experiment.NewLogPublisher[string]("publisher", &fmtLogger{}))
 
-	exp.Control(func() (interface{}, error) {
+	exp.Control(func() (string, error) {
 		return "Hello world!", nil
 	})
 
@@ -19,7 +18,7 @@ func ExampleLogPublisher() {
 	if err != nil {
 		panic(err)
 	} else {
-		fmt.Println(result.(string))
+		fmt.Println(result)
 	}
 
 	// Output: Hello world!

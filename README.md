@@ -23,7 +23,7 @@ the other, but you want to see how this behaves under load.
 
 ```go
 func main() {
-	exp := experiment.New(
+	exp := experiment.New[string](
 		experiment.WithPercentage(50),
 		experiment.WithConcurrency(),
 	)
@@ -31,11 +31,11 @@ func main() {
 	// fetch arbitrary data
 	userData := getUserData()
 
-	exp.Control(func() (interface{}, error) {
+	exp.Control(func() (string, error) {
 		return dataToPng.Render(userData)
 	})
 
-	exp.Candidate("", func() (interface{}, error) {
+	exp.Candidate("", func() (string, error) {
 		return imageX.Render(userData)
 	})
 
@@ -52,7 +52,7 @@ about your new implementation.
 
 ### Control
 
-`Control(func() (interface{}, error))` should be used to implement your current
+`Control(func() (any, error))` should be used to implement your current
 code. The result of this will be used to compare to other candidates. This will
 run as it would run normally.
 
@@ -65,7 +65,7 @@ func main() {
 		experiment.WithPercentage(50),
 	)
 
-	exp.Control(func() (interface{}, error) {
+	exp.Control(func() (string, error) {
 		return fmt.Sprintf("Hello world!"), nil
 	})
 
@@ -73,7 +73,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	} else {
-		fmt.Println(result.(string))
+		fmt.Println(result)
 	}
 }
 ```
@@ -82,7 +82,7 @@ The example above will always print `Hello world!`.
 
 ### Candidate
 
-`Candidate(string, func() (interface{}, error))` is a potential refactored
+`Candidate(string, func() (any, error))` is a potential refactored
 candidate. This will run sandboxed, meaning that when this panics, the panic
 is captured and the experiment continues.
 
@@ -91,15 +91,15 @@ configuration option and further overrides.
 
 ```go
 func main() {
-	exp := experiment.New(
+	exp := experiment.New[string](
 		experiment.WithPercentage(50),
 	)
 
-	exp.Control(func() (interface{}, error) {
+	exp.Control(func() (string, error) {
 		return fmt.Sprintf("Hello world!"), nil
 	})
 
-	exp.Candidate("candidate1", func() (interface{}, error) {
+	exp.Candidate("candidate1", func() (string, error) {
 		return "Hello candidate", nil
 	})
 
@@ -107,7 +107,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	} else {
-		fmt.Println(result.(string))
+		fmt.Println(result)
 	}
 }
 ```
@@ -135,14 +135,14 @@ control function, nothing else.
 
 ### Compare
 
-`Compare(interface{}, interface{}) bool` is used to compare the control value
+`Compare(any, any) bool` is used to compare the control value
 against a candidate value.
 
 If the candidate returned an error, this will not be executed.
 
 ### Clean
 
-`Clean(interface{}) interface{}` is used to clean the output values. This is
+`Clean(any) any` is used to clean the output values. This is
 implemented so that the publisher could use this cleaned data to store for later
 usage.
 
@@ -214,6 +214,12 @@ experiment as a percentage. `Force` and `Ignore` do not have an impact on this.
 
 This is set to 0 by default to encourage setting a sensible percentage.
 
+## Publishers
+
+Publishers are used to send observation data to different locations to be able to
+get insights into said observations. There is a simple Publisher, the
+LogPublisher, which writes all observations to the logger you provide in it.
+
 ### WithPublisher(Publisher)
 
 `WithPublisher(Publisher)` marks the experiment as Publishable. This means that
@@ -231,14 +237,13 @@ Observation values through a provided logger or the standard library logger.
 func main() {
 	exp := experiment.New(
 		experiment.WithPercentage(50),
-		experiment.WithPublisher(experiment.NewLogPublisher("publisher", nil)),
-	)
+	).WithPublisher(experiment.NewLogPublisher[string]("publisher", nil))
 
-	exp.Control(func() (interface{}, error) {
+	exp.Control(func() (string, error) {
 		return fmt.Sprintf("Hello world!"), nil
 	})
 
-	exp.Candidate("candidate1", func() (interface{}, error) {
+	exp.Candidate("candidate1", func() (string, error) {
 		return "Hello candidate", nil
 	})
 
@@ -248,7 +253,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	} else {
-		fmt.Println(result.(string))
+		fmt.Println(result)
 	}
 }
 ```
