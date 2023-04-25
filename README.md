@@ -22,6 +22,12 @@ current package you're using. Tests help you transition from one package to
 the other, but you want to see how this behaves under load.
 
 ```go
+package main
+
+import (
+	"github.com/jelmersnoeck/experiment/v3"
+)
+
 func main() {
 	exp := experiment.New[string](
 		experiment.WithPercentage(50),
@@ -49,6 +55,10 @@ that your end-user doesn't see any impact, but you get valuable information
 about your new implementation.
 
 ## Usage
+
+### Import
+
+This package uses go modules. To import it, use `github.com/jelmersnoeck/experiment/v3` as import path.
 
 ### Control
 

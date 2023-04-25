@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jelmersnoeck/experiment"
+	"github.com/jelmersnoeck/experiment/v3"
 )
 
 func TestRun(t *testing.T) {
