@@ -1,23 +1,27 @@
 package experiment
 
+import "time"
+
 // Config represents the configuration options for an experiment.
 type Config struct {
 	Percentage  int
 	Concurrency bool
+	Timeout     *time.Duration
 }
 
 // ConfigFunc represents a function that knows how to set a configuration option.
 type ConfigFunc func(*Config)
 
-// Publisher represents an interface that allows you to publish results.
-type Publisher[C any] interface {
-	Publish(Observation[C])
-}
-
 // WithPercentage returns a new func(*Config) that sets the percentage.
 func WithPercentage(p int) ConfigFunc {
 	return func(c *Config) {
 		c.Percentage = p
+	}
+}
+
+func WithTimeout(t time.Duration) ConfigFunc {
+	return func(c *Config) {
+		c.Timeout = &t
 	}
 }
 

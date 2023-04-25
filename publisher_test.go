@@ -1,6 +1,7 @@
 package experiment_test
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jelmersnoeck/experiment"
@@ -10,11 +11,11 @@ func ExampleLogPublisher() {
 	exp := experiment.New[string]().
 		WithPublisher(experiment.NewLogPublisher[string]("publisher", &fmtLogger{}))
 
-	exp.Control(func() (string, error) {
+	exp.Control(func(context.Context) (string, error) {
 		return "Hello world!", nil
 	})
 
-	result, err := exp.Run()
+	result, err := exp.Run(context.Background())
 	if err != nil {
 		panic(err)
 	} else {

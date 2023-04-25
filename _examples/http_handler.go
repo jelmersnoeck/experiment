@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/jelmersnoeck/experiment"
 )
@@ -12,6 +14,7 @@ import (
 type handleFunc func(http.ResponseWriter, *http.Request)
 
 func main() {
+	log.Print("Starting server, access http://0.0.0.0:12345/hello")
 	http.HandleFunc("/hello", exampleHandler())
 	log.Fatal(http.ListenAndServe(":12345", nil))
 }
@@ -21,28 +24,29 @@ func exampleHandler() handleFunc {
 		exp := experiment.New[string](
 			experiment.WithPercentage(50),
 			experiment.WithConcurrency(),
+			experiment.WithTimeout(500*time.Millisecond),
 		).WithPublisher(&experiment.LogPublisher[string]{})
 
-		exp.Before(func() error {
+		exp.Before(func(context.Context) error {
 			fmt.Println("before")
 			return nil
 		})
 
-		exp.Control(func() (string, error) {
+		exp.Control(func(context.Context) (string, error) {
 			return fmt.Sprintf("Hello %s", r.URL.Query().Get("name")), nil
 		})
 
-		exp.Candidate("foo", func() (string, error) {
+		exp.Candidate("foo", func(context.Context) (string, error) {
 			fmt.Println("foo")
 			return "Hello foo", nil
 		})
 
-		exp.Candidate("bar", func() (string, error) {
+		exp.Candidate("bar", func(context.Context) (string, error) {
 			fmt.Println("bar")
 			return "Hello bar", nil
 		})
 
-		exp.Candidate("baz", func() (string, error) {
+		exp.Candidate("baz", func(context.Context) (string, error) {
 			return "", errors.New("bar")
 		})
 
@@ -59,7 +63,9 @@ func exampleHandler() handleFunc {
 		exp.Force(r.URL.Query().Get("force") == "true")
 		exp.Ignore(r.URL.Query().Get("ignore") == "true")
 
-		result, err := exp.Run()
+		ctx := context.Background()
+		result, err := exp.Run(ctx)
+		_ = exp.Publish(ctx)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))

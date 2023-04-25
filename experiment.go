@@ -1,6 +1,7 @@
 package experiment
 
 import (
+	"context"
 	"math/rand"
 	"time"
 )
@@ -9,11 +10,11 @@ type (
 	// BeforeFunc represents the function that gets run before the experiment
 	// starts. This function will only run if the experiment should run. The
 	// functionality should be defined by the user.
-	BeforeFunc func() error
+	BeforeFunc func(context.Context) error
 
 	// CandidateFunc represents a function that is implemented by a candidate.
 	// The value returned is the value that will be used to compare data.
-	CandidateFunc[C any] func() (C, error)
+	CandidateFunc[C any] func(context.Context) (C, error)
 
 	// CleanFunc represents the function that cleans up the output data. This
 	// function will only be called for candidates that did not error.
@@ -127,72 +128,99 @@ func (e *Experiment[C]) Ignore(i bool) {
 // control function will be returned.
 // If the concurrency configuration is given, this will return as soon as the
 // control has finished running.
-func (e *Experiment[C]) Run() (C, error) {
+func (e *Experiment[C]) Run(ctx context.Context) (C, error) {
 	// don't run the candidates, just the control
 	if !e.shouldRun {
 		fnc := e.candidates["control"]
-		return fnc()
+
+		fncCtx, cancel := e.contextWithTimeout(ctx)
+		defer cancel()
+
+		return fnc(fncCtx)
 	}
 
 	if e.before != nil {
-		if err := e.before(); err != nil {
+		if err := e.before(ctx); err != nil {
 			var r C
 			return r, err
 		}
 	}
 
-	cChan := make(chan *Observation[C])
-	go e.run(cChan)
-
-	obs := <-cChan
-	return obs.Value, obs.Error
+	return e.run(ctx)
 }
 
-func (e *Experiment[C]) run(cChan chan *Observation[C]) {
-	if e.config.Concurrency {
-		e.runConcurrent(cChan)
-	} else {
-		e.runSequential(cChan)
+// Publish will publish all observations of the experiment to the configured
+// publisher. This will publish all observations, regardless if one errors or
+// not. It returns a PublishError which contains all underlying errors.
+func (e *Experiment[C]) Publish(ctx context.Context) error {
+	publishErr := &PublishError{}
+	if e.publisher != nil {
+		for _, o := range e.observations {
+			publishErr.append(e.publisher.Publish(ctx, *o))
+		}
 	}
+
+	if len(publishErr.Unwrap()) == 0 {
+		return nil
+	}
+
+	return publishErr
 }
 
-func (e *Experiment[C]) runConcurrent(cChan chan *Observation[C]) {
+func (e *Experiment[C]) contextWithTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	if e.config.Timeout == nil {
+		return context.WithCancel(ctx)
+	}
+
+	return context.WithTimeout(ctx, *e.config.Timeout)
+}
+
+func (e *Experiment[C]) run(ctx context.Context) (C, error) {
+	if e.config.Concurrency {
+		e.runConcurrent(ctx)
+	} else {
+		e.runSequential(ctx)
+	}
+
+	return e.conclude()
+}
+
+func (e *Experiment[C]) runConcurrent(ctx context.Context) {
 	obsChan := make(chan *Observation[C])
 	for k, v := range e.candidates {
 		go func(name string, fnc CandidateFunc[C]) {
-			runCandidate(name, fnc, obsChan)
+			candidateCtx, cancel := e.contextWithTimeout(ctx)
+			defer cancel()
+
+			runCandidate(candidateCtx, name, fnc, obsChan)
 		}(k, v)
 	}
 
 	for range e.candidates {
 		obs := <-obsChan
-
-		if obs.Name == "control" {
-			cChan <- obs
-		}
 		e.observations[obs.Name] = obs
 	}
-
-	e.conclude()
 }
 
-func (e *Experiment[C]) runSequential(cChan chan *Observation[C]) {
+func (e *Experiment[C]) runSequential(ctx context.Context) {
 	obsChan := make(chan *Observation[C])
 	for k, v := range e.candidates {
 		go func(name string, fnc CandidateFunc[C]) {
-			runCandidate(k, v, obsChan)
+			candidateCtx, cancel := e.contextWithTimeout(ctx)
+			defer cancel()
+
+			runCandidate(candidateCtx, k, v, obsChan)
 		}(k, v)
 
+		// block on waiting until there's a message in the obsChan. By doing
+		// this within the for loop, we ensure sequential operation, as this
+		// will block until the candidate is done running.
 		obs := <-obsChan
 		e.observations[obs.Name] = obs
 	}
-
-	e.conclude()
-
-	cChan <- e.observations["control"]
 }
 
-func (e *Experiment[C]) conclude() {
+func (e *Experiment[C]) conclude() (C, error) {
 	control := e.observations["control"]
 
 	for _, o := range e.observations {
@@ -219,14 +247,10 @@ func (e *Experiment[C]) conclude() {
 		}
 	}
 
-	if e.publisher != nil {
-		for _, o := range e.observations {
-			e.publisher.Publish(*o)
-		}
-	}
+	return control.Value, control.Error
 }
 
-func runCandidate[C any](name string, fnc CandidateFunc[C], obsChan chan *Observation[C]) {
+func runCandidate[C any](ctx context.Context, name string, fnc CandidateFunc[C], obsChan chan *Observation[C]) {
 	start := time.Now()
 
 	defer func() {
@@ -248,7 +272,7 @@ func runCandidate[C any](name string, fnc CandidateFunc[C], obsChan chan *Observ
 		}
 	}()
 
-	v, err := fnc()
+	v, err := fnc(ctx)
 	end := time.Now()
 
 	obsChan <- &Observation[C]{

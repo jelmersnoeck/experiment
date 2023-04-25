@@ -31,15 +31,15 @@ func main() {
 	// fetch arbitrary data
 	userData := getUserData()
 
-	exp.Control(func() (string, error) {
+	exp.Control(func(context.Context) (string, error) {
 		return dataToPng.Render(userData)
 	})
 
-	exp.Candidate("", func() (string, error) {
+	exp.Candidate("", func(context.Context) (string, error) {
 		return imageX.Render(userData)
 	})
 
-	result, err := exp.Run()
+	result, err := exp.Run(context.Background())
 }
 ```
 
@@ -52,9 +52,9 @@ about your new implementation.
 
 ### Control
 
-`Control(func() (any, error))` should be used to implement your current
-code. The result of this will be used to compare to other candidates. This will
-run as it would run normally.
+`Control(func(context.Context) (any, error))` should be used to implement your
+current code. The result of this will be used to compare to other candidates.
+This will run as it would run normally.
 
 A control is always expected. If no control is provided, the experiment will
 panic.
@@ -65,11 +65,11 @@ func main() {
 		experiment.WithPercentage(50),
 	)
 
-	exp.Control(func() (string, error) {
+	exp.Control(func(context.Context) (string, error) {
 		return fmt.Sprintf("Hello world!"), nil
 	})
 
-	result, err := exp.Run()
+	result, err := exp.Run(context.Background())
 	if err != nil {
 		panic(err)
 	} else {
@@ -82,9 +82,9 @@ The example above will always print `Hello world!`.
 
 ### Candidate
 
-`Candidate(string, func() (any, error))` is a potential refactored
-candidate. This will run sandboxed, meaning that when this panics, the panic
-is captured and the experiment continues.
+`Candidate(string, func(context.Context) (any, error))` is a potential
+refactored candidate. This will run sandboxed, meaning that when this panics,
+the panic is captured and the experiment continues.
 
 A candidate will not always run, this depends on the `WithPercentage(int)`
 configuration option and further overrides.
@@ -95,15 +95,15 @@ func main() {
 		experiment.WithPercentage(50),
 	)
 
-	exp.Control(func() (string, error) {
+	exp.Control(func(context.Context) (string, error) {
 		return fmt.Sprintf("Hello world!"), nil
 	})
 
-	exp.Candidate("candidate1", func() (string, error) {
+	exp.Candidate("candidate1", func(context.Context) (string, error) {
 		return "Hello candidate", nil
 	})
 
-	result, err := exp.Run()
+	result, err := exp.Run(context.Background())
 	if err != nil {
 		panic(err)
 	} else {
@@ -117,9 +117,9 @@ function will however run in the background 50% of the time.
 
 ### Run
 
-`Run()` will run the experiment and return the value and error of the control
+`Run(context.Context)` will run the experiment and return the value and error of the control
 function. The control function is always executed. The result value of the
-`Run()` function is an interface. The user should cast this to the expected
+`Run(context.Context)` function is an interface. The user should cast this to the expected
 type.
 
 ### Force
@@ -184,8 +184,9 @@ is also an `Error` attribute available, which contains the error returned.
 
 ### Regular errors
 
-When the control errors, this will be returned in the `Run()` method. When a
-candidate errors, this will be attached to the `Error` field in its observation.
+When the control errors, this will be returned in the `Run(context.Context)`
+method. When a candidate errors, this will be attached to the `Error` field in
+its observation.
 
 An error marks the experiment as a failure.
 
@@ -239,17 +240,17 @@ func main() {
 		experiment.WithPercentage(50),
 	).WithPublisher(experiment.NewLogPublisher[string]("publisher", nil))
 
-	exp.Control(func() (string, error) {
+	exp.Control(func(context.Context) (string, error) {
 		return fmt.Sprintf("Hello world!"), nil
 	})
 
-	exp.Candidate("candidate1", func() (string, error) {
+	exp.Candidate("candidate1", func(context.Context) (string, error) {
 		return "Hello candidate", nil
 	})
 
 	exp.Force(true)
 
-	result, err := exp.Run()
+	result, err := exp.Run(context.Context)
 	if err != nil {
 		panic(err)
 	} else {
