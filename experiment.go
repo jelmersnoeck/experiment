@@ -1,7 +1,6 @@
 package experiment
 
 import (
-	"errors"
 	"math/rand"
 	"time"
 )
@@ -24,15 +23,6 @@ type (
 	// how to compare them. The functionality is implemented by the user. This
 	// function will only be called for candidates that did not error.
 	CompareFunc[C any] func(C, C) bool
-)
-
-var (
-	// ErrControlCandidate is returned when a candidate is initiated with
-	// control as it's name.
-	ErrControlCandidate = errors.New("can't use a candidate with the name 'control'")
-
-	// ErrCandidatePanic represents the error that a candidate panicked.
-	ErrCandidatePanic = errors.New("candidate panicked")
 )
 
 // Experiment represents a new refactoring experiment. This is where you'll
@@ -98,7 +88,7 @@ func (e *Experiment[C]) Control(fnc CandidateFunc[C]) {
 // If the name is control, this will panic.
 func (e *Experiment[C]) Candidate(name string, fnc CandidateFunc[C]) error {
 	if name == "control" {
-		return ErrControlCandidate
+		panic("can't use a candidate with the name 'control'")
 	}
 
 	e.candidates[name] = fnc
@@ -248,9 +238,11 @@ func runCandidate[C any](name string, fnc CandidateFunc[C], obsChan chan *Observ
 			end := time.Now()
 
 			obsChan <- &Observation[C]{
-				Name:     name,
-				Panic:    r,
-				Error:    ErrCandidatePanic,
+				Name: name,
+				Error: CandidatePanicError{
+					Name:  name,
+					Panic: r,
+				},
 				Duration: end.Sub(start),
 			}
 		}

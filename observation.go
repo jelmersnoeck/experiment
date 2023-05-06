@@ -8,7 +8,6 @@ type Observation[C any] struct {
 	Error        error
 	Success      bool
 	Name         string
-	Panic        interface{}
 	Value        C
 	CleanValue   C
 	ControlValue C

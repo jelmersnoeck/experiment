@@ -44,10 +44,17 @@ func TestRun_Sequential(t *testing.T) {
 		exp.Run()
 	})
 
-	t.Run("it should record the panic", func(t *testing.T) {
+	t.Run("it should record the panic in the CandidatePanicError", func(t *testing.T) {
 		pub.fnc = func(o experiment.Observation[string]) {
-			if o.Name == "panic" && o.Panic == nil {
-				t.Errorf("Expected a panic, did not record one")
+			if o.Name == "panic" {
+				var panicError experiment.CandidatePanicError
+				if !errors.As(o.Error, &panicError) {
+					t.Errorf("Expected CandidatePanicError, got %T", o.Error)
+				}
+
+				if panicError.Panic == nil {
+					t.Errorf("Expected a panic, did not record one")
+				}
 			}
 		}
 
@@ -57,7 +64,7 @@ func TestRun_Sequential(t *testing.T) {
 	t.Run("it should record the clean control", func(t *testing.T) {
 		pub.fnc = func(o experiment.Observation[string]) {
 			if o.Name != "control" && o.Error == nil {
-				if o.Panic == nil && o.ControlValue != "Cleaned control" {
+				if o.ControlValue != "Cleaned control" {
 					t.Errorf("Expected value to be '%s', got '%s'", "Cleaned Control", o.ControlValue)
 				}
 			}
@@ -68,7 +75,7 @@ func TestRun_Sequential(t *testing.T) {
 
 	t.Run("it should record the clean control value", func(t *testing.T) {
 		pub.fnc = func(o experiment.Observation[string]) {
-			if o.Panic == nil && o.Error == nil && o.Success {
+			if o.Error == nil && o.Success {
 				cleaned := fmt.Sprintf("Cleaned %s", o.Value)
 				if o.CleanValue != cleaned {
 					t.Errorf("Expected value to be '%s', got '%s'", cleaned, o.CleanValue)
