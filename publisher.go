@@ -1,10 +1,18 @@
 package experiment
 
-import "log"
+import (
+	"context"
+	"log"
+)
 
 // Logger represents the interface that experiment expects for a logger.
 type Logger interface {
 	Printf(string, ...interface{})
+}
+
+// Publisher represents an interface that allows you to publish results.
+type Publisher[C any] interface {
+	Publish(context.Context, Observation[C]) error
 }
 
 // NewLogPublisher returns a new LogPublisher.
@@ -25,7 +33,7 @@ type LogPublisher[C any] struct {
 // Publish will publish all the Observation variables as a log line. It is in
 // the following format:
 // [Experiment Observation] name=%s duration=%s success=%t value=%v error=%v
-func (l *LogPublisher[C]) Publish(o Observation[C]) {
+func (l *LogPublisher[C]) Publish(_ context.Context, o Observation[C]) error {
 	msg := "[Experiment Observation: %s] name=%s duration=%s success=%t value=%v error=%v"
 	args := []interface{}{l.Name, o.Name, o.Duration, o.Success, o.CleanValue, o.Error}
 	if l.Logger == nil {
@@ -33,4 +41,8 @@ func (l *LogPublisher[C]) Publish(o Observation[C]) {
 	} else {
 		l.Logger.Printf(msg, args...)
 	}
+
+	return nil
 }
+
+var _ Publisher[string] = &LogPublisher[string]{}
