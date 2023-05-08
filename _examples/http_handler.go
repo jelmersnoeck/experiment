@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jelmersnoeck/experiment"
+	"github.com/jelmersnoeck/experiment/v3"
 )
 
 type handleFunc func(http.ResponseWriter, *http.Request)
@@ -48,6 +48,15 @@ func exampleHandler() handleFunc {
 
 		exp.Candidate("baz", func(context.Context) (string, error) {
 			return "", errors.New("bar")
+		})
+
+		exp.Candidate("timeout", func(ctx context.Context) (string, error) {
+			select {
+			case <-time.Tick(time.Second):
+				return "Waited a full second!", nil
+			case <-ctx.Done():
+				return "Timeout hit", ctx.Err()
+			}
 		})
 
 		exp.Compare(func(control, candidate string) bool {

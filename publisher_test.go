@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jelmersnoeck/experiment"
+	"github.com/jelmersnoeck/experiment/v3"
 )
 
 func ExampleLogPublisher() {

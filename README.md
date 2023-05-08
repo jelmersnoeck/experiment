@@ -22,6 +22,12 @@ current package you're using. Tests help you transition from one package to
 the other, but you want to see how this behaves under load.
 
 ```go
+package main
+
+import (
+	"github.com/jelmersnoeck/experiment/v3"
+)
+
 func main() {
 	exp := experiment.New[string](
 		experiment.WithPercentage(50),
@@ -50,6 +56,10 @@ about your new implementation.
 
 ## Usage
 
+### Import
+
+This package uses go modules. To import it, use `github.com/jelmersnoeck/experiment/v3` as import path.
+
 ### Control
 
 `Control(func(context.Context) (any, error))` should be used to implement your
@@ -61,7 +71,7 @@ panic.
 
 ```go
 func main() {
-	exp := experiment.New(
+	exp := experiment.New[string](
 		experiment.WithPercentage(50),
 	)
 
@@ -236,7 +246,7 @@ Observation values through a provided logger or the standard library logger.
 
 ```go
 func main() {
-	exp := experiment.New(
+	exp := experiment.New[string](
 		experiment.WithPercentage(50),
 	).WithPublisher(experiment.NewLogPublisher[string]("publisher", nil))
 
